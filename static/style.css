@@ -1,0 +1,90 @@
+/* Base page styling stays the same */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    background-color: #1f1f1f;
+    color: #fff;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 250px;
+    background-color: #252525;
+    padding: 30px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.sidebar h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #00ffe5;
+}
+
+.sidebar label {
+    margin-bottom: 10px;
+    font-weight: 500;
+    display: block;
+    font-size: 15px;
+}
+
+/* Radio Buttons styling */
+.sidebar input[type="radio"] {
+    margin-right: 8px;
+}
+
+/* Action Labels (Radio Text) */
+.sidebar form > label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+/* Button Styling */
+.sidebar button {
+    margin-top: 20px;
+    padding: 8px 16px;
+    background-color: #3d3d3d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.sidebar button:hover {
+    background-color: #555;
+}
+
+/* Main Content Styling */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+}
+
+.main-content h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+.main-content h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+footer {
+    margin-top: 40px;
+    font-size: 12px;
+    color: #aaa;
+}
