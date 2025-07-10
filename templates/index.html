@@ -4,31 +4,111 @@
     <meta charset="UTF-8">
     <title>Face Recognition Attendance System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            padding: 20px;
+            background-color: #2e2e2e;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+        }
+        .hidden {
+            display: none;
+        }
+        .visible {
+            display: block;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
+
+<div class="container">
     <div class="sidebar">
-        <h2>Menu</h2>
-        <form method="POST">
+        <h2 style="color:aqua;">Menu</h2>
+        <form method="POST" onsubmit="return handleSubmit();">
             <label>Select an action:</label><br>
-            <input type="radio" name="action" value="Train Model" {% if action == "Train Model" %}checked{% endif %}> Train Model<br>
-            <input type="radio" name="action" value="Mark Attendance" {% if action == "Mark Attendance" %}checked{% endif %}> Mark Attendance<br>
-            <input type="radio" name="action" value="Download Attendance PDF" {% if action == "Download Attendance PDF" %}checked{% endif %}> Download Attendance PDF<br><br>
+            <input type="radio" name="action" value="Train Model" checked> Train Model<br>
+            <input type="radio" name="action" value="Mark Attendance"> Mark Attendance<br>
+            <input type="radio" name="action" value="Download Attendance PDF"> Download Attendance PDF<br>
+            <input type="radio" name="action" value="Upload Student Images"> Upload Student Images<br>
             <button type="submit">Submit</button>
         </form>
     </div>
 
-    <div class="main-content">
-        <h1>📸 Face Recognition Attendance System</h1>
-        {% if action == "Train Model" %}
-            <h2>🧠 Train Face Recognition Model</h2>
-        {% elif action == "Mark Attendance" %}
-            <h2>✅ Mark Attendance</h2>
-        {% elif action == "Download Attendance PDF" %}
-            <h2>📥 Download Attendance PDF</h2>
-        {% endif %}
-        <p>{{ message }}</p>
+    <div class="content">
+        <div id="home" class="visible">
+            <h1>📸 Face Recognition Attendance System</h1>
+            <p>Welcome to the smart attendance system.</p>
+        </div>
 
-        <footer>© 2025 Face Recognition Attendance System</footer>
+        <div id="train-model" class="hidden">
+            <h1>🔧 Training Model</h1>
+            <p>Model training in progress...</p>
+        </div>
+
+        <div id="mark-attendance" class="hidden">
+            <h1>✅ Mark Attendance</h1>
+            <p>Attendance is being marked...</p>
+        </div>
+
+        <div id="download-pdf" class="hidden">
+            <h1>📥 Download Attendance PDF</h1>
+            <p>Your attendance PDF will be generated soon...</p>
+        </div>
+
+        <div id="upload-images" class="hidden">
+            <h1>📂 Upload Student Images</h1>
+            <form method="POST" enctype="multipart/form-data" action="/upload_menu">
+                <input type="file" name="student_images" multiple><br><br>
+                <button type="submit" name="upload_action" value="Upload">Upload</button>
+            </form>
+        </div>
     </div>
+</div>
+
+<script>
+    function handleSubmit() {
+        let selectedAction = document.querySelector('input[name="action"]:checked').value;
+
+        // Hide all sections
+        document.getElementById("home").classList.add("hidden");
+        document.getElementById("train-model").classList.add("hidden");
+        document.getElementById("mark-attendance").classList.add("hidden");
+        document.getElementById("download-pdf").classList.add("hidden");
+        document.getElementById("upload-images").classList.add("hidden");
+
+        // Show the selected section
+        if (selectedAction === "Train Model") {
+            document.getElementById("train-model").classList.remove("hidden");
+        } else if (selectedAction === "Mark Attendance") {
+            document.getElementById("mark-attendance").classList.remove("hidden");
+        } else if (selectedAction === "Download Attendance PDF") {
+            document.getElementById("download-pdf").classList.remove("hidden");
+        } else if (selectedAction === "Upload Student Images") {
+            document.getElementById("upload-images").classList.remove("hidden");
+        }
+
+        return false; // Prevent form submission to Flask (you can remove this if you want Flask to handle the action)
+    }
+</script>
+
 </body>
 </html>
