@@ -1,90 +1,63 @@
-/* Base page styling stays the same */
 body {
-    margin: 0;
+    background-color: #0e0e0e;
+    color: white;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    background-color: #1f1f1f;
-    color: #fff;
-}
-
-/* Sidebar Styling */
-.sidebar {
-    width: 250px;
-    background-color: #252525;
-    padding: 30px;
+    margin: 0;
+    padding: 0;
     height: 100vh;
     display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-
-.sidebar h2 {
-    margin-bottom: 20px;
-    font-size: 24px;
-    color: #00ffe5;
-}
-
-.sidebar label {
-    margin-bottom: 10px;
-    font-weight: 500;
-    display: block;
-    font-size: 15px;
-}
-
-/* Radio Buttons styling */
-.sidebar input[type="radio"] {
-    margin-right: 8px;
-}
-
-/* Action Labels (Radio Text) */
-.sidebar form > label {
-    display: flex;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 12px;
-    font-size: 14px;
-    color: #ccc;
 }
 
-/* Button Styling */
-.sidebar button {
+.center-container {
+    text-align: center;
+    padding: 50px;
+    border-radius: 20px;
+    background-color: #1c1c1c;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    min-width: 350px;
+}
+
+h1 {
+    margin-bottom: 40px;
+    font-size: 26px;
+}
+
+.action-form {
+    margin-bottom: 30px;
+}
+
+.radio-option {
+    margin: 15px 0;
+    font-size: 18px;
+}
+
+input[type="radio"] {
+    margin-right: 10px;
+}
+
+.logout-link {
+    color: #00ccff;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.logout-link:hover {
+    text-decoration: underline;
+}
+
+/* Optional: make buttons look better */
+button {
     margin-top: 20px;
-    padding: 8px 16px;
-    background-color: #3d3d3d;
-    color: #fff;
+    background-color: #444;
+    color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    font-weight: bold;
-    transition: background-color 0.3s;
     cursor: pointer;
 }
 
-.sidebar button:hover {
-    background-color: #555;
-}
-
-/* Main Content Styling */
-.main-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 40px;
-}
-
-.main-content h1 {
-    font-size: 36px;
-    margin-bottom: 20px;
-}
-
-.main-content h2 {
-    font-size: 24px;
-    margin-bottom: 10px;
-}
-
-footer {
-    margin-top: 40px;
-    font-size: 12px;
-    color: #aaa;
+button:hover {
+    background-color: #666;
 }

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Action</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="center-container">
+    {% if action == 'train' %}
+        <h1>🧠 Train Face Recognition Model</h1>
+        <button onclick="alert('Training started...')">Train Now</button>
+    {% elif action == 'mark' %}
+        <h1>✅ Mark Attendance</h1>
+        <button onclick="alert('Attendance marking started...')">Start Now</button>
+    {% elif action == 'download' %}
+        <h1>📄 Download Attendance PDF</h1>
+        <button onclick="alert('Downloading...')">Download</button>
+    {% else %}
+        <h1>Invalid Action</h1>
+    {% endif %}
+    <br><br>
+    <a href="{{ url_for('home') }}">Back to Home</a>
+</div>
+</body>
+</html>
