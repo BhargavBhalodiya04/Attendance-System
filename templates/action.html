@@ -2,25 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Action</title>
+    <title>Action Page</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="center-container">
-    {% if action == 'train' %}
-        <h1>🧠 Train Face Recognition Model</h1>
-        <button onclick="alert('Training started...')">Train Now</button>
-    {% elif action == 'mark' %}
-        <h1>✅ Mark Attendance</h1>
-        <button onclick="alert('Attendance marking started...')">Start Now</button>
-    {% elif action == 'download' %}
-        <h1>📄 Download Attendance PDF</h1>
-        <button onclick="alert('Downloading...')">Download</button>
-    {% else %}
-        <h1>Invalid Action</h1>
-    {% endif %}
-    <br><br>
-    <a href="{{ url_for('home') }}">Back to Home</a>
-</div>
+    <div class="center-container">
+        <h1>Selected Action: {{ action }}</h1>
+
+        {% if action == 'train' %}
+            <h1>🧠 Train Face Recognition Model</h1>
+            <form method="POST" action="{{ url_for('start_train') }}">
+                <button type="submit">Start Training</button>
+            </form>
+
+        {% elif action == 'mark' %}
+            <h1>📸 Mark Attendance</h1>
+            <form method="POST" action="{{ url_for('start_mark') }}">
+                <button type="submit">Start Marking Attendance</button>
+            </form>
+
+        {% elif action == 'download' %}
+            <h1>📥 Download Attendance Report</h1>
+            <form method="POST" action="{{ url_for('download_pdf') }}">
+                <button type="submit">Download PDF</button>
+            </form>
+
+        {% elif action == 'upload' %}
+            <h1><span class="icon-label">📷</span>Upload Images to AWS S3</h1>
+            <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data">
+                <label for="bucket_name">Enter S3 Bucket Name:</label>
+                <input type="text" name="bucket_name" id="bucket_name" placeholder="e.g., my-student-bucket" required>
+
+                <label for="student_images">Select Images:</label>
+                <input type="file" name="student_images" id="student_images" multiple required>
+
+                <input type="submit" value="Upload">
+            </form>
+        {% else %}
+            <p>Invalid action selected.</p>
+        {% endif %}
+
+        <a href="{{ url_for('home') }}" class="back-home-link">← Back to Home</a>
+    </div>
 </body>
 </html>

@@ -12,16 +12,20 @@ body {
 
 .center-container {
     text-align: center;
-    padding: 50px;
+    padding: 40px 30px;
     border-radius: 20px;
     background-color: #1c1c1c;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
     min-width: 350px;
+    max-width: 500px;
+    width: 90%;
 }
 
 h1 {
-    margin-bottom: 40px;
-    font-size: 26px;
+    margin-bottom: 30px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #f1f1f1;
 }
 
 .action-form {
@@ -37,27 +41,61 @@ input[type="radio"] {
     margin-right: 10px;
 }
 
-.logout-link {
+.logout-link,
+.back-home-link {
     color: #00ccff;
     text-decoration: none;
     font-size: 16px;
+    font-weight: 500;
+    display: inline-block;
+    margin-top: 20px;
+    transition: color 0.3s;
 }
 
-.logout-link:hover {
+.logout-link:hover,
+.back-home-link:hover {
+    color: #66e0ff;
     text-decoration: underline;
 }
 
-/* Optional: make buttons look better */
-button {
-    margin-top: 20px;
-    background-color: #444;
+input[type="text"],
+input[type="password"],
+input[type="file"],
+select {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 10px 0 20px 0;
+    border: none;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+    color: #fff;
+    font-size: 15px;
+}
+
+input::placeholder {
+    color: #aaa;
+}
+
+button,
+input[type="submit"] {
+    background-color: #3a3a3a;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+    font-size: 15px;
 }
 
-button:hover {
-    background-color: #666;
+button:hover,
+input[type="submit"]:hover {
+    background-color: #555;
+}
+
+/* Optional: style icons or emojis */
+.icon-label {
+    margin-right: 8px;
+    font-size: 20px;
 }
