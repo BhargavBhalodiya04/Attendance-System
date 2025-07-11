@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 import os
 from werkzeug.utils import secure_filename
 from upload_to_s3 import upload_multiple_images
+import sys
+sys.dont_write_bytecode = True
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -61,14 +63,14 @@ def start_mark():
     return redirect(url_for('home'))
 
 
-@app.route('/download-pdf', methods=['POST'])
-def download_pdf():
-    file_path = os.path.join(UPLOAD_FOLDER, 'attendance_report.pdf')
-    if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
-            f.write('Dummy Attendance Report')
+# @app.route('/download-pdf', methods=['POST'])
+# def download_pdf():
+#     file_path = os.path.join(UPLOAD_FOLDER, 'attendance_report.pdf')
+#     if not os.path.exists(file_path):
+#         with open(file_path, 'w') as f:
+#             f.write('Dummy Attendance Report')
 
-    return send_file(file_path, as_attachment=True)
+#     return send_file(file_path, as_attachment=True)
 
 
 @app.route('/upload-image', methods=['POST'])
