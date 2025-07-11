@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .upload-results {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .upload-results h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+        }
+
+        .upload-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .upload-item img {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .failure {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<div class="upload-results">
+    <h2>📝 Upload Summary</h2>
+    {% for item in results %}
+        <div class="upload-item">
+            {% if "✅" in item %}
+                <img src="{{ url_for('static', filename='check.png') }}" alt="Success">
+                <span class="success">{{ item.replace('✅ ', '') }}</span>
+            {% else %}
+                <img src="{{ url_for('static', filename='error.png') }}" alt="Error">
+                <span class="failure">{{ item.replace('❌ ', '') }}</span>
+            {% endif %}
+        </div>
+    {% endfor %}
+    <br>
+    <a href="{{ url_for('home') }}">← Back to Home</a>
+</div>
+</body>
+</html>

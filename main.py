@@ -6,8 +6,8 @@ from upload_to_s3 import upload_multiple_images
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# UPLOAD_FOLDER = 'uploads'
+# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Simple hardcoded user login
 USER = {'username': 'admin', 'password': 'admin'}
@@ -85,7 +85,7 @@ def upload_image():
 
     try:
         result = upload_multiple_images(bucket_name, er_number, student_name, image_files)
-        return "<br>".join(result)
+        return render_template('action.html', action='upload', results=result)
     except Exception as e:
         return f"❌ Upload failed: {str(e)}"
 

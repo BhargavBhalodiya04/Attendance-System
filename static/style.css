@@ -99,3 +99,46 @@ input[type="submit"]:hover {
     margin-right: 8px;
     font-size: 20px;
 }
+
+.upload-summary-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #111; /* Dark background */
+    padding: 15px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-top: 20px;
+    color: #f0f0f0; /* White-ish text */
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Heading style */
+.upload-summary-scroll h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #00ff88; /* Optional green accent */
+    font-weight: bold;
+}
+
+/* Clean list */
+.upload-summary-scroll ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+/* Row display with icon */
+.upload-summary-scroll li {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    color: #ffffff; /* Text stays white */
+}
+
+/* Icon spacing */
+.upload-summary-scroll li::before {
+    margin-right: 8px;
+    font-size: 16px;
+}
+

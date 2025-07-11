@@ -193,4 +193,3 @@ def upload_multiple_images(bucket_name, er_number, name, image_files):
             os.remove(local_path)
 
     return upload_results
-
