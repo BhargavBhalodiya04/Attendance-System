@@ -28,6 +28,7 @@ def login():
     return render_template('login.html')
 
 
+
 @app.route('/home', methods=['GET', 'POST'])
 def home():
     if not session.get('logged_in'):
