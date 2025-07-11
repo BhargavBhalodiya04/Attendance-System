@@ -2,7 +2,7 @@ from flask import Flask, request, render_template_string
 import boto3
 import os
 from werkzeug.utils import secure_filename
-# from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
@@ -18,8 +18,11 @@ UPLOAD_PAGE = """
 <body>
     <h2>Upload Images to AWS S3</h2>
     <form action="/" method="POST" enctype="multipart/form-data">
-        <label>Enter S3 Bucket Name:</label><br>
-        <input type="text" name="bucket_name" required><br><br>
+        <label>Enter Year (e.g., 2025):</label><br>
+        <input type="text" name="year" required><br><br>
+
+        <label>Enter Class Name (e.g., ClassA):</label><br>
+        <input type="text" name="class_name" required><br><br>
 
         <label>Select Images:</label><br>
         <input type="file" name="files[]" multiple required><br><br>
@@ -30,7 +33,7 @@ UPLOAD_PAGE = """
 </html>
 """
 
-# Bucket creation
+# Create bucket if it doesn't exist
 def create_bucket(bucket_name):
     try:
         s3.head_bucket(Bucket=bucket_name)
@@ -45,9 +48,14 @@ def create_bucket(bucket_name):
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        bucket_name = request.form.get('bucket_name')
-        if not bucket_name:
-            return 'Bucket name is required.'
+        year = request.form.get('year')
+        class_name = request.form.get('class_name')
+
+        if not year or not class_name:
+            return 'Year and Class Name are required.'
+
+        bucket_name = year.strip()
+        folder_prefix = f"{class_name.strip().replace(' ', '_')}/"
 
         try:
             create_bucket(bucket_name)
@@ -62,17 +70,18 @@ def upload_file():
             filename = secure_filename(file.filename)
             file.save(filename)
 
+            # Upload to folder inside the bucket
+            s3_key = f"{folder_prefix}{filename}"
             try:
-                s3.upload_file(Filename=filename, Bucket=bucket_name, Key=filename)
+                s3.upload_file(Filename=filename, Bucket=bucket_name, Key=s3_key)
             except Exception as e:
                 os.remove(filename)
                 return f"Upload failed for {filename}: {str(e)}"
 
             os.remove(filename)
 
-        return f"Files uploaded successfully to S3 bucket '{bucket_name}'!"
+        return f"Files uploaded successfully to S3 bucket '{bucket_name}' in folder '{folder_prefix}'!"
 
-    # For GET request, show the form
     return render_template_string(UPLOAD_PAGE)
 
 if __name__ == '__main__':
