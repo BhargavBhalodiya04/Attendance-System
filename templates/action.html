@@ -30,7 +30,7 @@
             </form>
 
         {% elif action == 'upload' %}
-            <h1>📷 Upload Student Image to S3</h1>
+            <h1>Upload Student Image </h1>
             <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data">
                 <label for="bucket_name">Enter S3 Bucket Name:</label><br>
                 <input type="text" name="bucket_name" id="bucket_name" placeholder="e.g., my-student-bucket" required><br><br>
@@ -49,7 +49,7 @@
 
             {% if results %}
                 <div class="upload-summary-scroll">
-                    <h3>✅ Uploaded Files</h3>
+                    <h3>Uploaded Files</h3>
                     <ul>
                         {% for item in results %}
                             <li>{{ item }}</li>
