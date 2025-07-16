@@ -1,19 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import os
 from werkzeug.utils import secure_filename
-from upload_to_s3 import upload_multiple_images
+from core.upload_to_s3 import upload_multiple_images  # Handles Excel too
 import sys
 sys.dont_write_bytecode = True
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# UPLOAD_FOLDER = 'uploads'
-# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Simple hardcoded user login
 USER = {'username': 'admin', 'password': 'admin'}
-
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -28,7 +23,6 @@ def login():
             return render_template('login.html', error="Invalid credentials")
 
     return render_template('login.html')
-
 
 
 @app.route('/home', methods=['GET', 'POST'])
@@ -63,14 +57,15 @@ def start_mark():
     return redirect(url_for('home'))
 
 
-# @app.route('/download-pdf', methods=['POST'])
-# def download_pdf():
-#     file_path = os.path.join(UPLOAD_FOLDER, 'attendance_report.pdf')
-#     if not os.path.exists(file_path):
-#         with open(file_path, 'w') as f:
-#             f.write('Dummy Attendance Report')
+@app.route('/download-pdf', methods=['POST'])
+def download_pdf():
+    file_path = os.path.join("uploads", 'attendance_report.pdf')
+    if not os.path.exists(file_path):
+        os.makedirs("uploads", exist_ok=True)
+        with open(file_path, 'w') as f:
+            f.write('Dummy Attendance Report')
 
-#     return send_file(file_path, as_attachment=True)
+    return send_file(file_path, as_attachment=True)
 
 
 @app.route('/upload-image', methods=['POST'])
