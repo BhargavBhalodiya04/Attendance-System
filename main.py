@@ -1,97 +1,97 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import os
 from werkzeug.utils import secure_filename
-
-from core.upload_to_s3 import upload_file_to_s3
-from core.rekognition_multi_search import recognize_faces_in_image
-from core.mark_attendance import mark_attendance
-from core.aws_config import BUCKET_NAME, COLLECTION_ID
-
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+from core.upload_to_s3 import upload_multiple_images  # Handles Excel too
+import sys
+sys.dont_write_bytecode = True
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = 'your_secret_key_here'
 
-# Ensure upload folder exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+USER = {'username': 'admin', 'password': 'admin'}
+
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username == USER['username'] and password == USER['password']:
+            session['logged_in'] = True
+            return redirect(url_for('home'))
+        else:
+            return render_template('login.html', error="Invalid credentials")
+
+    return render_template('login.html')
 
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route('/')
+@app.route('/home', methods=['GET', 'POST'])
 def home():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    selected_action = request.form.get('action')
+    if selected_action:
+        return redirect(url_for('action_page', action=selected_action))
+
     return render_template('home.html')
 
 
-@app.route('/action/<action>')
+@app.route('/action/<action>', methods=['GET', 'POST'])
 def action_page(action):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
     return render_template('action.html', action=action)
 
 
-# ✅ Upload student image(s)
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    bucket_name = request.form['bucket_name']
-    er_number = request.form['er_number']
-    name = request.form['name']
-    files = request.files.getlist('images')
-
-    results = []
-
-    for file in files:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            ext = filename.rsplit('.', 1)[1].lower()
-            s3_key = f"{er_number}_{name}_{files.index(file)+1}.{ext}"
-
-            local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(local_path)
-
-            upload_file_to_s3(local_path, bucket_name, s3_key)
-            results.append(f"✅ {s3_key}")
-        else:
-            results.append(f"❌ Invalid file: {file.filename}")
-
-    return render_template('action.html', action='upload', results=results)
+@app.route('/start-train', methods=['POST'])
+def start_train():
+    print("✅ Training started")
+    return redirect(url_for('home'))
 
 
-# ✅ Mark attendance from class photo(s)
-@app.route('/start_mark', methods=['POST'])
+@app.route('/start-mark', methods=['POST'])
 def start_mark():
-    files = request.files.getlist('images')
-    recognized_students = set()
-    results = []
+    print("✅ Attendance marking started")
+    return redirect(url_for('home'))
 
-    for file in files:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(local_path)
 
-            s3_key = f"class_images/{filename}"
-            upload_file_to_s3(local_path, BUCKET_NAME, s3_key)
+@app.route('/download-pdf', methods=['POST'])
+def download_pdf():
+    file_path = os.path.join("uploads", 'attendance_report.pdf')
+    if not os.path.exists(file_path):
+        os.makedirs("uploads", exist_ok=True)
+        with open(file_path, 'w') as f:
+            f.write('Dummy Attendance Report')
 
-            matched_ids = recognize_faces_in_image(BUCKET_NAME, s3_key, COLLECTION_ID)
+    return send_file(file_path, as_attachment=True)
 
-            if matched_ids:
-                for student_id in matched_ids:
-                    if student_id not in recognized_students:
-                        try:
-                            er, name = student_id.split('_', 1)
-                            mark_attendance(er, name)
-                            recognized_students.add(student_id)
-                            results.append(f"✅ {student_id}")
-                        except ValueError:
-                            results.append(f"❌ Invalid student ID format: {student_id}")
-            else:
-                results.append(f"❌ No faces matched in {filename}")
-        else:
-            results.append(f"❌ Invalid file: {file.filename}")
 
-    return render_template('upload_result.html', results=results)
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    bucket_name = request.form.get('bucket_name')
+    er_number = request.form.get('er_number')
+    student_name = request.form.get('name')
+    image_files = request.files.getlist('images')
+
+    if not bucket_name or not er_number or not student_name or not image_files:
+        return "❌ All fields are required."
+
+    try:
+        result = upload_multiple_images(bucket_name, er_number, student_name, image_files)
+        return render_template('action.html', action='upload', results=result)
+    except Exception as e:
+        return f"❌ Upload failed: {str(e)}"
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
