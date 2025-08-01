@@ -5,59 +5,35 @@
     <title>Upload Results</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .upload-results {
-            max-width: 600px;
-            margin: 50px auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        .upload-results h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            color: #333;
-        }
-
-        .upload-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            padding: 6px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .upload-item img {
-            width: 20px;
-            margin-right: 10px;
-        }
-
-        .success {
-            color: green;
-        }
-
-        .failure {
-            color: red;
-        }
+        .upload-results { margin: auto; max-width: 500px; }
+        .summary-block { background: #181818; color: #fff; border-radius: 12px; padding: 18px; margin-bottom: 18px;}
+        .upload-item { display: flex; align-items: center; margin-bottom: 12px; }
+        .upload-item img { width: 60px; height: 60px; object-fit: cover; margin-left: 16px; border-radius: 6px; }
+        .back-home-link { display: inline-block; margin-top: 24px; font-size: 15px;}
     </style>
 </head>
 <body>
 <div class="upload-results">
     <h2>📝 Upload Summary</h2>
-    {% for item in results %}
-        <div class="upload-item">
-            {% if "✅" in item %}
-                <img src="{{ url_for('static', filename='check.png') }}" alt="Success">
-                <span class="success">{{ item.replace('✅ ', '') }}</span>
-            {% else %}
-                <img src="{{ url_for('static', filename='error.png') }}" alt="Error">
-                <span class="failure">{{ item.replace('❌ ', '') }}</span>
-            {% endif %}
-        </div>
-    {% endfor %}
+    <div class="summary-block">
+        {% if batch_name %}<strong>Batch Name:</strong> {{ batch_name }}<br>{% endif %}
+    </div>
+    {% if results %}
+        {% for item in results %}
+            <div class="upload-item">
+                <div>
+                    <strong>Student Name:</strong> {{ item.student_name }}
+                </div>
+                {% if item.student_img %}
+                    <img src="{{ item.student_img }}" alt="Student Image">
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No results to display.</p>
+    {% endif %}
     <br>
-    <a href="{{ url_for('home') }}">← Back to Home</a>
+    <a href="{{ url_for('home') }}" class="back-home-link">← Back to Home</a>
 </div>
 </body>
 </html>
