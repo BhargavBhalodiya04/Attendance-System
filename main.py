@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import sys
 sys.dont_write_bytecode = True
 
-load_dotenv()  # load .env variables
+# Load .env variables
+load_dotenv()
 
 AWS_REGION = os.getenv("AWS_REGION")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
@@ -17,7 +18,7 @@ from core.update_excel import mark_attendance_local
 from core.mark_batch_attendance import mark_batch_attendance_s3
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Change to a real, secure secret key!
+app.secret_key = FLASK_SECRET_KEY   # Use a strong key for production!
 
 USER = {'username': 'admin', 'password': 'admin'}
 
@@ -80,23 +81,13 @@ def upload_image():
 
         try:
             upload_results = upload_multiple_images(batch_name, er_number, student_name, image_files)
-
-            s3_image_urls = []
-            for msg in upload_results:
-                if msg.startswith("✅ Uploaded:"):
-                    # Parse the S3 key from the message
-                    s3_key = msg.split("✅ Uploaded:")[-1].strip()
-                    # Make S3 URL (adjust region/bucket as needed)
-                    # s3_image_urls.append(f"https://{bucket_name}.s3.{AWS_REGION}.amazonaws.com/{s3_key}")
-
             student = {
                 'er_number': er_number,
                 'name': student_name,
                 'batch_name': batch_name,
                 'bucket_name': bucket_name,
-                # 'image_urls': s3_image_urls
             }
-            return render_template('upload.html', student=student)
+            return render_template('upload.html', student=student, results=upload_results)
         except Exception as e:
             error_msg = f"❌ Upload failed: {str(e)}"
             return render_template('upload.html', error=error_msg)
@@ -110,25 +101,39 @@ def take_attendance():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        # Method selection (local or S3-based)
         method = request.form.get('method')
         if method == 'local':
             results = mark_attendance_local()
+            return render_template('upload_result.html', results=results)
         elif method == 's3':
-            results = mark_attendance_s3()
+            # Collect batch_name, lab_name, and uploaded class image(s) from form
+            batch_name = request.form.get('batch_name')
+            lab_name = request.form.get('lab_name')
+            files = request.files.getlist('class_image')
+            try:
+                present, absentees = mark_batch_attendance_s3(
+                    batch_name, lab_name, files
+                )
+                return render_template('attendance_result.html', present=present, absentees=absentees)
+            except Exception as e:
+                error_msg = f"❌ Attendance failed: {str(e)}"
+                return render_template('take_attendance.html', error=error_msg)
         else:
             results = ['❌ No attendance method selected.']
-        return render_template('upload_result.html', results=results)
+            return render_template('upload_result.html', results=results)
+
     return render_template('take_attendance.html')
 
-# You may implement this route if you have batch-level attendance
 @app.route('/batch_attendance_upload', methods=['GET', 'POST'])
 def batch_attendance_upload():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     if request.method == 'POST':
-        # Implement logic or render form
+        # Implement batch upload logic here as needed
         pass
     return render_template('batch_attendance_upload.html')
+
 
 if __name__ == '__main__':
     print("Starting Flask server...")

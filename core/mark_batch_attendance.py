@@ -40,7 +40,6 @@ def mark_batch_attendance_s3(batch_name, class_name, group_image_files, s3_bucke
                 if response['FaceMatches']:
                     present_students.add(student_name)
             except Exception as e:
-                # Optional: log error, e.g., print(f"Error for {student_name}: {e}")
                 continue
         group_img_file.seek(0)  # Reset stream
 
