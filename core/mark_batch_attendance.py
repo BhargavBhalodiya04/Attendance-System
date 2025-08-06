@@ -29,7 +29,7 @@ def mark_batch_attendance_s3(batch_name, class_name, group_image_files, s3_bucke
 
         for student in students:
             student_name = student['name']
-            face_key = student['photo_key']  # e.g., "photos/er123.jpg"
+            face_key = student['photo_key'] 
             try:
                 student_bytes = get_photo_bytes_from_s3(s3_bucket, face_key)
                 response = rekognition.compare_faces(
