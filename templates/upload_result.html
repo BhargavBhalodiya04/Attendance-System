@@ -22,7 +22,7 @@
         {% for item in results %}
             <div class="upload-item">
                 <div>
-                    <strong>Student Name:</strong> {{ item.student_name }}
+                    <strong>Student Name:</strong> {{ item.student_name }} {{ item.student_img }}
                 </div>
                 {% if item.student_img %}
                     <img src="{{ item.student_img }}" alt="Student Image">

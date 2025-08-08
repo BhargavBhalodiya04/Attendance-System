@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: auto; }
+        h2 { text-align: center; }
+        ul { padding: 0; list-style-type: none; }
+        li {
+            background-color: #f4f4f4;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✅ Attendance Summary</h2>
+
+        {% if students %}
+            <ul>
+                {% for student in students %}
+                    <li>{{ student }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No student faces recognized from the image.</p>
+        {% endif %}
+
+        <a href="{{ url_for('take_attendance') }}" class="back-link">← Mark Another Attendance</a>
+    </div>
+</body>
+</html>
