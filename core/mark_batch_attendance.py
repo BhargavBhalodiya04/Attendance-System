@@ -1,5 +1,7 @@
 import boto3
 import os
+from datetime import datetime
+from openpyxl import Workbook
 
 # Get individual student image bytes from S3
 def get_photo_bytes_from_s3(bucket, key):
@@ -7,7 +9,7 @@ def get_photo_bytes_from_s3(bucket, key):
     response = s3.get_object(Bucket=bucket, Key=key)
     return response['Body'].read()
 
-# List all student image keys in a batch (e.g., '2021-2024/')
+# List all student image keys in a batch
 def list_student_images_from_s3(bucket, batch_prefix):
     s3 = boto3.client('s3')
     paginator = s3.get_paginator('list_objects_v2')
@@ -21,24 +23,63 @@ def list_student_images_from_s3(bucket, batch_prefix):
                 image_keys.append(key)
     return image_keys
 
-# Extract readable student name from key like '2021-2024/ER1234_Rahul_Patel.jpg'
-def extract_student_name_from_key(key):
+# Extract ER number and student name from file name
+def extract_student_details_from_key(key):
     filename = os.path.basename(key)
     parts = os.path.splitext(filename)[0].split('_')
     if len(parts) >= 2:
-        return ' '.join(parts[1:])  # e.g., 'Rahul Patel'
-    return parts[0]  # fallback
+        er_number = parts[0]
+        name = ' '.join(parts[1:])
+        return er_number, name
+    return parts[0], parts[0]  # fallback
+
+# Save attendance to Excel
+# Save attendance to Excel
+def save_attendance_to_excel(attendance_data, batch_name, class_name, subject):
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H-%M-%S")
+    
+    # Save into a fixed folder so Flask can serve it
+    save_dir = "attendance_reports"
+    os.makedirs(save_dir, exist_ok=True)
+
+    filename = f"Attendance_{batch_name}_{current_date}_{current_time}.xlsx"
+    filepath = os.path.join(save_dir, filename)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance"
+
+    # Header row
+    ws.append(["ER Number", "Student Name", "Date", "Time", "Class", "Subject", "Batch"])
+
+    # Data rows
+    for student in attendance_data:
+        ws.append([
+            student["er_number"],
+            student["name"],
+            current_date,
+            current_time,
+            class_name,
+            subject,
+            batch_name
+        ])
+
+    wb.save(filepath)
+    return filepath
 
 # Main attendance marking function
 def mark_batch_attendance_s3(
-    batch_name,            # e.g., '2021-2024'
-    class_name,            # optional, currently unused
-    group_image_files,     # list of file streams (from Flask)
+    batch_name,
+    class_name,
+    subject,
+    group_image_files,
     s3_bucket='ict-attendance',
     region='ap-south-1'
 ):
     rekognition = boto3.client('rekognition', region_name=region)
-    batch_prefix = f"{batch_name}/"  # Ensure folder structure like '2021-2024/'
+    batch_prefix = f"{batch_name}/"
 
     student_image_keys = list_student_images_from_s3(s3_bucket, batch_prefix)
 
@@ -65,22 +106,21 @@ def mark_batch_attendance_s3(
                     SimilarityThreshold=80
                 )
                 if response['FaceMatches']:
-                    student_name = extract_student_name_from_key(key)
+                    er_number, student_name = extract_student_details_from_key(key)
                     image_url = f"https://{s3_bucket}.s3.amazonaws.com/{key}"
-                    present_students[student_name] = image_url
+                    present_students[er_number] = {
+                        "er_number": er_number,
+                        "name": student_name,
+                        "image_url": image_url
+                    }
             except Exception as e:
                 print(f"⚠️ Error comparing {key}: {e}")
                 continue
 
-        group_img_file.seek(0)  # Reset for next file if multiple images uploaded
+        group_img_file.seek(0)
 
-    # Build final lists
-    all_student_names = [extract_student_name_from_key(k) for k in student_image_keys]
-    absentees = [name for name in all_student_names if name not in present_students]
+    # Prepare Excel file
+    attendance_list = list(present_students.values())
+    excel_file_path = save_attendance_to_excel(attendance_list, batch_name, class_name, subject)
 
-    present_list = [
-        {"name": name, "image_url": present_students[name]}
-        for name in sorted(present_students)
-    ]
-
-    return present_list, absentees
+    return attendance_list, excel_file_path
