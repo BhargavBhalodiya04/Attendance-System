@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .upload-results { margin: auto; max-width: 500px; }
+        .summary-block { background: #181818; color: #fff; border-radius: 12px; padding: 18px; margin-bottom: 18px;}
+        .upload-item { display: flex; align-items: center; margin-bottom: 12px; }
+        .upload-item img { width: 60px; height: 60px; object-fit: cover; margin-left: 16px; border-radius: 6px; }
+        .back-home-link { display: inline-block; margin-top: 24px; font-size: 15px;}
+    </style>
+</head>
+<body>
+<div class="upload-results">
+    <h2>📝 Upload Summary</h2>
+    <div class="summary-block">
+        {% if batch_name %}<strong>Batch Name:</strong> {{ batch_name }}<br>{% endif %}
+    </div>
+    {% if results %}
+        {% for item in results %}
+            <div class="upload-item">
+                <div>
+                    <strong>Student Name:</strong> {{ item.student_name }} {{ item.student_img }}
+                </div>
+                {% if item.student_img %}
+                    <img src="{{ item.student_img }}" alt="Student Image">
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No results to display.</p>
+    {% endif %}
+    <br>
+    <a href="{{ url_for('home') }}" class="back-home-link">← Back to Home</a>
+</div>
+</body>
+</html>

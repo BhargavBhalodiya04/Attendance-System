@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Batch Attendance Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: auto; }
+        h2 { text-align: center; }
+        form { margin-top: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="file"], input[type="text"], button { width: 100%; padding: 8px; font-size: 16px; }
+        button { margin-top: 15px; }
+        .back-link { margin-top: 20px; display: block; text-align: center; }
+        .error { color: red; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Batch Attendance Upload</h2>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('batch_attendance_upload') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="batch_name">Batch Name:</label>
+                <input type="text" id="batch_name" name="batch_name" required />
+            </div>
+
+            <div class="form-group">
+                <label for="attendance_file">Attendance File (Excel or CSV):</label>
+                <input type="file" id="attendance_file" name="attendance_file" accept=".xls,.xlsx,.csv" required />
+            </div>
+
+            <button type="submit">Upload Attendance</button>
+        </form>
+
+        <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition Attendance System - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="center-container">
+        <h1>Face Recognition Attendance System</h1>
+        <form method="POST" class="action-form">
+
+            <!-- Existing option: Register Student Images -->
+            <div class="radio-option">
+                <input type="radio" name="action" value="upload" onchange="this.form.submit()">
+                <label>Register Student Images</label>
+            </div>
+
+            <!-- NEW option: Take Attendance -->
+            <div class="radio-option">
+                <input type="radio" name="action" value="take_attendance" onchange="this.form.submit()">
+                <label>Take Attendance</label>
+            </div>
+
+        </form>
+        <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+    </div>
+</body>
+
+</html>

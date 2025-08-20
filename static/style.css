@@ -1,0 +1,399 @@
+/* General body and layout */
+body {
+    background-color: #0e0e0e;
+    color: #e0e0e0; /* Slightly softer white */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Centered container style */
+.center-container {
+    text-align: center;
+    padding: 40px 30px;
+    border-radius: 20px;
+    background-color: #1c1c1c;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    min-width: 350px;
+    max-width: 500px;
+    width: 90%;
+    transition: background-color 0.3s ease;
+}
+
+/* Headings */
+h1 {
+    margin-bottom: 30px;
+    font-size: 26px;
+    font-weight: 700;
+    color: #f1f1f1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Form styling */
+.action-form {
+    margin-bottom: 30px;
+}
+
+/* Radio button container */
+.radio-option {
+    margin: 15px 0;
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    color: #ccc;
+    transition: color 0.3s;
+}
+.radio-option:hover {
+    color: #00ccff;
+}
+
+/* Radio button input spacing */
+input[type="radio"] {
+    margin-right: 10px;
+    accent-color: #00ccff; /* Modern accent for radios */
+    cursor: pointer;
+}
+
+/* Styled links for logout and back buttons */
+.logout-link,
+.back-home-link {
+    color: #00ccff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    display: inline-block;
+    margin-top: 20px;
+    transition: color 0.3s ease;
+}
+
+.logout-link:hover,
+.back-home-link:hover {
+    color: #66e0ff;
+    text-decoration: underline;
+}
+
+/* Input fields */
+input[type="text"],
+input[type="password"],
+input[type="file"],
+select {
+    width: 100%;
+    padding: 12px 14px;
+    margin: 10px 0 20px 0;
+    border: none;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+    color: #ddd;
+    font-size: 15px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="file"]:focus,
+select:focus {
+    outline: none;
+    background-color: #393939;
+    box-shadow: 0 0 8px #00ccff;
+}
+
+input::placeholder {
+    color: #888;
+}
+
+/* Buttons */
+button,
+input[type="submit"] {
+    background-color: #3a3a3a;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 15px;
+    user-select: none;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background-color: #00ccff;
+    color: #0a0a0a;
+    transform: translateY(-2px);
+}
+
+/* Optional: style for icon labels */
+.icon-label {
+    margin-right: 8px;
+    font-size: 20px;
+    vertical-align: middle;
+}
+
+/* Upload results scrollable container */
+.upload-summary-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #111; /* Dark background */
+    padding: 20px;
+    border: 1px solid #333;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-top: 20px;
+    color: #e0e0e0; /* Softer white */
+    box-shadow: 0 2px 10px rgba(0, 204, 255, 0.2);
+    scroll-behavior: smooth;
+}
+
+/* Heading inside upload summary */
+.upload-summary-scroll h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #00ff88; /* Green accent */
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+/* Clean list within summary */
+.upload-summary-scroll ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+/* Individual upload result rows */
+.upload-summary-scroll li {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    color: #f0f0f0;
+    border-bottom: 1px solid #222;
+    font-weight: 500;
+}
+
+/* Icon before the text */
+.upload-summary-scroll li::before {
+    content: "•";
+    color: #00ccff;
+    margin-right: 10px;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* Success and failure coloring */
+.success {
+    color: #00ff88;
+    font-weight: 600;
+}
+
+.failure {
+    color: #ff5555;
+    font-weight: 600;
+}
+
+/* Scrollbar styling for WebKit browsers */
+.upload-summary-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.upload-summary-scroll::-webkit-scrollbar-track {
+    background: #222;
+    border-radius: 10px;
+}
+
+.upload-summary-scroll::-webkit-scrollbar-thumb {
+    background: #00ccff;
+    border-radius: 10px;
+}
+.upload-results {
+    max-width: 600px;
+    margin: 50px auto;
+    background: #16191c;
+    padding: 25px 30px;
+    border-radius: 16px;
+    box-shadow: 0 0 18px rgba(0,0,0,0.25);
+}
+
+.upload-results h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #00ccff;
+    font-weight: bold;
+    letter-spacing: 1px;
+    font-size: 1.4rem;
+}
+
+.upload-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #21242a;
+    transition: background 0.2s;
+    border-bottom: 1px solid #242728;
+}
+
+.upload-item img {
+    width: 22px;
+    margin-right: 12px;
+    filter: drop-shadow(0 0 2px #222);
+}
+
+.success {
+    color: #00ff99;
+    font-weight: 600;
+}
+
+.failure {
+    color: #ff4d4d;
+    font-weight: 600;
+}
+
+a.back-home-link {
+    color: #00ccff;
+    margin-top: 15px;
+    display: inline-block;
+    text-decoration: none;
+    transition: color 0.2s;
+    font-size: 1rem;
+}
+
+a.back-home-link:hover {
+    color: #66fefd;
+    text-decoration: underline;
+}
+
+/* AWS Rekognition Attendance Form: specialized styles */
+.aws-attendance-container {
+    background: #191b1f;
+    padding: 38px 32px 32px 32px;
+    border-radius: 20px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    max-width: 420px;
+    width: 98vw;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.aws-attendance-container h2 {
+    text-align: center;
+    color: #00ccff;
+    margin-bottom: 28px;
+    font-size: 28px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    text-shadow: 0 2px 5px #000a;
+}
+
+.aws-attendance-container .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.aws-attendance-container label {
+    display: block;
+    color: #e0e0e0;
+    margin-bottom: 7px;
+    font-size: 15.6px;
+    font-weight: 500;
+}
+
+.aws-attendance-container input[type="text"],
+.aws-attendance-container input[type="file"] {
+    width: 100%;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #23272f;
+    color: #ececec;
+    font-size: 16px;
+    margin-bottom: 0;
+    box-sizing: border-box;
+    transition: background 0.2s, box-shadow 0.25s;
+}
+
+.aws-attendance-container input[type="text"]:focus,
+.aws-attendance-container input[type="file"]:focus {
+    outline: none;
+    background: #282e37;
+    box-shadow: 0 0 0 2px #00ccff80;
+}
+
+.aws-attendance-container input::placeholder {
+    color: #8a939b;
+}
+
+.aws-attendance-container input[type="file"]::-webkit-file-upload-button {
+    background: #2c3742;
+    color: #eee;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 700;
+}
+.aws-attendance-container input[type="file"]::-webkit-file-upload-button:hover {
+    background: #00ccff;
+    color: #17202a;
+}
+
+.aws-attendance-container button,
+.aws-attendance-container input[type="submit"] {
+    width: 100%;
+    background-color: #00ccff;
+    color: #17202a;
+    font-weight: bold;
+    font-size: 17px;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    transition: background 0.20s, transform 0.2s;
+    cursor: pointer;
+    box-shadow: 0 2px 10px #00ccff30;
+    letter-spacing: 0.5px;
+}
+
+.aws-attendance-container button:hover,
+.aws-attendance-container input[type="submit"]:hover {
+    background: #00e6fa;
+    color: #11181e;
+    transform: translateY(-1px) scale(1.03);
+}
+
+.aws-attendance-container p strong,
+.aws-attendance-container .attendance-note {
+    color: #54ffd4;
+    font-size: 1rem;
+    margin-top: 6px;
+    margin-bottom: 7px;
+    display: block;
+}
+
+/* Back home link - override if needed */
+.aws-attendance-container a.back-home-link {
+    color: #00ccff;
+    margin-top: 15px;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    transition: color 0.2s;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+.aws-attendance-container a.back-home-link:hover {
+    color: #7dfcff;
+    text-decoration: underline;
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Register Student Images</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      .center-container {
+        max-width: 600px;
+        margin: 40px auto;
+        font-family: Arial, sans-serif;
+        background: #232526;
+        border-radius: 15px;
+        padding: 32px 30px 18px 30px;
+        box-shadow: 0 0 25px #10151b;
+        color: #fafbfc;
+      }
+      h2 { margin-bottom: 15px; color: #05c4ff; }
+      label {
+        display: block;
+        margin-top: 15px;
+        font-weight: bold;
+      }
+      input[type="text"], input[type="file"] {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 7px;
+        border: 1px solid #313542;
+        background: #181919;
+        color: #fafbfc;
+      }
+      button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        width: 100%;
+        background: #05c4ff;
+        color: #181919;
+        font-weight: bold;
+        border: 0;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+      }
+      .error-message {
+        color: #ff6666;
+        margin: 15px 0 5px 0;
+      }
+      .student-data {
+        margin-top: 32px;
+        border: 1px solid #21254c;
+        border-radius: 10px;
+        padding: 20px;
+        background: #1b262c;
+        color: #cbcfee;
+      }
+      .student-data h3 {color: #05c4ff;}
+      .student-data img {
+        margin: 12px 8px 12px 0;
+        border: 1px solid #232526;
+        border-radius: 5px;
+        padding: 2px;
+        max-width: 120px;
+        height: auto;
+        display: inline-block;
+        background: #232526;
+      }
+      .back-home-link {
+        display: block;
+        margin-top: 30px;
+        text-decoration: none;
+        color: #05c4ff;
+        font-size: 16px;
+      }
+      .back-home-link:hover {
+        color: #fff;
+        text-decoration: underline;
+      }
+    </style>
+</head>
+<body>
+    <div class="center-container">
+        <h2>Register Student Images</h2>
+
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+
+        <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data">
+            <label for="bucket_name">S3 Bucket Name:</label>
+            <input type="text" id="bucket_name" name="bucket_name" value="ict-attendance" required />
+
+            <label for="er_number">Student ER Number:</label>
+            <input type="text" id="er_number" name="er_number" required />
+
+            <label for="name">Student Name:</label>
+            <input type="text" id="name" name="name" required />
+
+            <label for="batch_name">Batch Name:</label>
+            <input type="text" id="batch_name" name="batch_name" required />
+
+            <label for="images">Select Image(s):</label>
+            <input type="file" id="images" name="images" multiple accept=".jpg,.jpeg,.png" required />
+
+            <button type="submit">Upload</button>
+        </form>
+
+        {% if student %}
+        <div class="student-data">
+            <h3>Uploaded Student Data:</h3>
+            <p><strong>ER Number:</strong> {{ student.er_number }}</p>
+            <p><strong>Name:</strong> {{ student.name }}</p>
+            <p><strong>Batch Name:</strong> {{ student.batch_name }}</p>
+            <p><strong>Bucket Name:</strong> {{ student.bucket_name }}</p>
+            <!-- <p><strong>Uploaded Images:</strong></p> -->
+            <div>
+                {% for image_url in student.image_urls %}
+                    <img src="{{ image_url }}" alt="Student Image" />
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <a href="{{ url_for('home') }}" class="back-home-link">← Back to Home</a>
+    </div>
+</body>
+</html>

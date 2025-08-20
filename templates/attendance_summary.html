@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        ul {
+            padding: 0;
+            list-style-type: none;
+        }
+
+        li {
+            background-color: #f4f4f4;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>✅ Attendance Summary</h2>
+
+        {% if batch %}
+        <p><strong>Batch:</strong> {{ batch }}</p>
+        {% endif %}
+        {% if subject %}
+        <p><strong>Subject:</strong> {{ subject }}</p>
+        {% endif %}
+
+        {% for student in students %}
+        <div>{{ student }}</div>
+        {% endfor %}
+
+        <!-- Download button -->
+        <p>
+            <a href="{{ url_for('download_attendance') }}"
+                style="background: #28a745; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px;">
+                ⬇ Download Attendance
+            </a>
+        </p>
+
+        <a href="{{ url_for('take_attendance') }}">← Mark Another Attendance</a>
+    </div>
+</body>
+
+
+</html>

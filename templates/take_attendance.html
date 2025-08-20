@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Take Attendance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        button {
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .back-link {
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Take Attendance (AWS Rekognition)</h2>
+        <form method="POST" action="{{ url_for('take_attendance') }}" enctype="multipart/form-data">
+
+            <div class="form-group">
+                <label for="batch_name">Batch Name:<span style="color:red;">*</span></label>
+                <input type="text" id="batch_name" name="batch_name" required />
+            </div>
+
+            <div class="form-group">
+                <label for="subject_name">Subject Name:<span style="color:red;">*</span></label>
+                <input type="text" id="subject_name" name="subject_name" required />
+            </div>
+
+
+            <div class="form-group">
+                <label for="lab_name">Lab Name: <span style="color:gray;">(optional)</span></label>
+                <input type="text" id="lab_name" name="lab_name" />
+            </div>
+
+            <div class="form-group">
+                <label for="class_image">Class Image:<span style="color:red;">*</span></label>
+                <input type="file" id="class_image" name="class_image" accept="image/*" required />
+            </div>
+
+
+            <button type="submit">Mark Attendance</button>
+        </form>
+        <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+    </div>
+</body>
+
+</html>
