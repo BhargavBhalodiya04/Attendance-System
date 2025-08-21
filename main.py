@@ -24,8 +24,8 @@ FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 
-# Enable CORS for React frontend on localhost:8081
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:8081"}})
+# Enable CORS for React frontend
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 # Initialize AWS clients
 rekognition_client = boto3.client(
@@ -41,8 +41,8 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_KEY
 )
 
-# Import core functions (make sure these exist and import correctly)
-from core.upload_to_s3 import upload_multiple_images, mark_attendance_s3
+# Import core functions
+from core.upload_to_s3 import upload_multiple_images
 from core.update_excel import sync_students_to_excel
 from core.mark_batch_attendance import mark_batch_attendance_s3
 
@@ -94,8 +94,6 @@ def action_page(action):
 
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
-    # No login check now!
-
     bucket_name = request.form.get('bucket_name', '').strip() or 'ict-attendance'
     batch_name = request.form.get('batch_name', '').strip()
     er_number = request.form.get('er_number', '').strip()
@@ -132,72 +130,53 @@ def upload_image():
         return jsonify({"error": f"❌ Upload failed: {str(e)}"}), 500
 
 
-
-@app.route('/take_attendance', methods=['GET', 'POST'])
+# ---------------- JSON Attendance API ---------------- #
+@app.route('/take_attendance', methods=['POST'])
 def take_attendance():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-
-    recognized_students = []
-
-    if request.method == 'POST':
+    try:
         batch_name = request.form.get('batch_name')
         subject_name = request.form.get('subject_name')
         lab_name = request.form.get('lab_name', '')
-        uploaded_file = request.files.get('class_image')
 
-        if not uploaded_file or not batch_name or not subject_name:
-            return render_template("take_attendance.html", error="❌ Batch, Subject, and Image are required.")
+        group_images = request.files.getlist('class_images')
+        if not batch_name or not subject_name or not group_images:
+            return jsonify({"success": False, "error": "Batch, Subject, and class_images are required"}), 400
 
-        img_bytes = uploaded_file.read()
+        # Run batch attendance
+        attendance_list, excel_file_path = mark_batch_attendance_s3(
+            batch_name=batch_name,
+            class_name=lab_name,
+            subject=subject_name,
+            group_image_files=group_images
+        )
 
-        try:
-            result = s3_client.list_objects_v2(Bucket="ict-attendance", Prefix=f"{batch_name}/")
-        except Exception as e:
-            return render_template("take_attendance.html", error=f"❌ Error listing S3 objects: {e}")
+        # Prepare response
+        present_names = [s["name"] for s in attendance_list]
+        present_er = [s["er_number"] for s in attendance_list]
 
-        if 'Contents' not in result:
-            session['recognized_students'] = []
-            session['batch_name'] = batch_name
-            session['subject_name'] = subject_name
-            session['class_name'] = lab_name
-            return redirect(url_for('attendance_summary'))
+        # TODO: get full list of students for absent calc (for now empty)
+        absent_students = []
 
-        for obj in result['Contents']:
-            if obj['Key'].lower().endswith(('.jpg', '.jpeg', '.png')):
-                source_key = obj['Key']
-                try:
-                    response = rekognition_client.compare_faces(
-                        SourceImage={'S3Object': {'Bucket': "ict-attendance", 'Name': source_key}},
-                        TargetImage={'Bytes': img_bytes},
-                        SimilarityThreshold=85
-                    )
-                    for match in response.get('FaceMatches', []):
-                        student_nm = source_key.split("/")[-1].rsplit(".", 1)[0]
-                        if student_nm not in recognized_students:
-                            recognized_students.append(student_nm)
-                except Exception as e:
-                    print(f"Error comparing {source_key}: {str(e)}")
+        report_url = f"/{excel_file_path}"
 
-        session['recognized_students'] = recognized_students
-        session['batch_name'] = batch_name
-        session['subject_name'] = subject_name
-        session['class_name'] = lab_name
+        return jsonify({
+            "success": True,
+            "present": present_names,
+            "absent": absent_students,
+            "report_url": report_url
+        }), 200
 
-        return redirect(url_for('attendance_summary'))
-
-    return render_template("take_attendance.html")
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route('/attendance_summary')
-def attendance_summary():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    students = session.get('recognized_students', [])
-    batch_name = session.get('batch_name', None)
-    return render_template("attendance_summary.html", students=students, batch=batch_name)
+# Serve saved attendance reports
+@app.route('/attendance_reports/<path:filename>')
+def download_report(filename):
+    return send_from_directory("attendance_reports", filename, as_attachment=True)
 
 
+# ---------------- Batch Upload Placeholder ---------------- #
 @app.route('/batch_attendance_upload', methods=['GET', 'POST'])
 def batch_attendance_upload():
     if not session.get('logged_in'):
@@ -209,6 +188,7 @@ def batch_attendance_upload():
     return render_template('batch_attendance_upload.html')
 
 
+# ---------------- CSV Download ---------------- #
 @app.route('/download_attendance')
 def download_attendance():
     if not session.get('logged_in'):
@@ -239,31 +219,29 @@ def download_attendance():
     output.seek(0)
     csv_bytes = io.BytesIO(output.getvalue().encode())
 
-    # ✅ Save filename
     filename = f"{batch_name}_{subject_name}_{current_date}_{current_time}.csv"
     s3_key = f"reports/{filename}"
 
     try:
-        # ✅ Upload CSV to S3
-        s3_client.upload_fileobj(csv_bytes, "ict-attendance", s3_key)
-
-        # ✅ Generate presigned URL (valid 1 hour)
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': "ict-attendance", 'Key': s3_key},
-            ExpiresIn=3600
+        # ✅ Upload CSV to S3 with public-read ACL
+        s3_client.upload_fileobj(
+            csv_bytes,
+            "ict-attendance",
+            s3_key,
+            ExtraArgs={'ACL': 'public-read'}   # 👈 makes file public
         )
 
-        # Return JSON if frontend request, else direct file
+        # ✅ Permanent Public URL
+        public_url = f"https://ict-attendance.s3.ap-south-1.amazonaws.com/{s3_key}"
+
         if request.headers.get("Accept") == "application/json":
             return jsonify({
                 "success": True,
-                "report_url": presigned_url,
+                "report_url": public_url,
                 "file_name": filename,
                 "present_students": students
             })
         else:
-            # fallback: download directly
             return send_file(
                 io.BytesIO(output.getvalue().encode()),
                 mimetype='text/csv',
@@ -273,6 +251,7 @@ def download_attendance():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 
 if __name__ == '__main__':

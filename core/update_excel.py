@@ -1,6 +1,6 @@
 import os
 import boto3
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
 
@@ -52,30 +52,26 @@ def get_students_from_s3():
     Fetch student details (ER number, Name, Batch) from S3 bucket.
     Assumes folder structure: batch/ER1234_Name.jpg
     """
-    students = set()
+    students = []
 
-    # List all objects in bucket
-    response = s3.list_objects_v2(Bucket=BUCKET_NAME)
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=BUCKET_NAME):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
 
-    if "Contents" not in response:
-        return students
+            # Skip folders
+            if key.endswith("/"):
+                continue
 
-    for obj in response["Contents"]:
-        key = obj["Key"]
+            parts = key.split("/")
+            if len(parts) >= 2:
+                batch = parts[0]  # e.g., 2021-2024
+                filename = parts[-1]  # e.g., ER1234_JohnDoe.jpg
 
-        # Skip folders
-        if key.endswith("/"):
-            continue
-
-        parts = key.split("/")
-        if len(parts) >= 2:
-            batch = parts[0]  # e.g., 2021-2024
-            filename = parts[-1]  # e.g., ER1234_JohnDoe.jpg
-
-            if "_" in filename:
-                er_number, name_with_ext = filename.split("_", 1)
-                student_name = os.path.splitext(name_with_ext)[0]
-                students.add((er_number, student_name, batch))
+                if "_" in filename:
+                    er_number, name_with_ext = filename.split("_", 1)
+                    student_name = os.path.splitext(name_with_ext)[0]
+                    students.append((er_number, student_name, batch))
 
     return students
 
@@ -83,49 +79,24 @@ def get_students_from_s3():
 def sync_students_to_excel():
     """
     Sync students from S3 with Excel (local + S3 copy).
-    Adds new students, removes missing students.
+    Completely rebuilds Excel each time from S3 data.
     """
-    # Download latest Excel from S3 first
+    # Download latest Excel (not really needed since we rebuild fresh, but keep for backup)
     download_excel_from_s3()
 
     students = get_students_from_s3()
 
-    # Load or create Excel file
-    if os.path.exists(EXCEL_FILE):
-        wb = load_workbook(EXCEL_FILE)
-        ws = wb.active
-    else:
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Students"
-        ws.append(["ER Number", "Name", "Batch"])  # header
+    # Create a new workbook each time (fresh rebuild)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Students"
+    ws.append(["ER Number", "Name", "Batch"])  # header
 
-    # Current Excel data
-    excel_students = {}
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if row[0]:
-            excel_students[row[0]] = row
-
-    # Add new students
     for er, name, batch in students:
-        if er not in excel_students:
-            ws.append([er, name, batch])
-            print(f"✅ Added student {er} - {name}")
-
-    # Remove students not in S3
-    er_in_s3 = {er for er, _, _ in students}
-    rows_to_delete = []
-    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        er = row[0]
-        if er not in er_in_s3:
-            rows_to_delete.append(row_idx)
-
-    for idx in sorted(rows_to_delete, reverse=True):
-        ws.delete_rows(idx)
-        print(f"❌ Removed student at row {idx}")
+        ws.append([er, name, batch])
 
     wb.save(EXCEL_FILE)
-    print(f"📘 Excel file '{EXCEL_FILE}' updated successfully.")
+    print(f"📘 Excel file '{EXCEL_FILE}' rebuilt with {len(students)} students.")
 
     # Upload updated Excel back to S3
     upload_excel_to_s3()
