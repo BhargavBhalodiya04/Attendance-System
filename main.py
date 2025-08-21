@@ -10,6 +10,7 @@ from flask import (
     session, send_file, jsonify
 )
 from flask_cors import CORS
+from flask import send_from_directory
 
 sys.dont_write_bytecode = True
 

@@ -2,7 +2,6 @@ import boto3
 import os
 from datetime import datetime
 from openpyxl import Workbook
-from core.update_excel import sync_students_to_excel   # ✅ Import Excel sync
 
 # Get individual student image bytes from S3
 def get_photo_bytes_from_s3(bucket, key):
@@ -34,7 +33,7 @@ def extract_student_details_from_key(key):
         return er_number, name
     return parts[0], parts[0]  # fallback
 
-# Save attendance to Excel (local report)
+# Save attendance to Excel
 def save_attendance_to_excel(attendance_data, batch_name, class_name, subject):
     now = datetime.now()
     current_date = now.strftime("%Y-%m-%d")
@@ -81,10 +80,6 @@ def mark_batch_attendance_s3(
     rekognition = boto3.client('rekognition', region_name=region)
     batch_prefix = f"{batch_name}/"
 
-    # ✅ First sync Excel file so it's up-to-date before marking attendance
-    print("🔄 Syncing students.xlsx with S3 before marking attendance...")
-    sync_students_to_excel()
-
     student_image_keys = list_student_images_from_s3(s3_bucket, batch_prefix)
 
     present_students = {}
@@ -123,12 +118,8 @@ def mark_batch_attendance_s3(
 
         group_img_file.seek(0)
 
-    # Prepare Excel attendance report
+    # Prepare Excel file
     attendance_list = list(present_students.values())
     excel_file_path = save_attendance_to_excel(attendance_list, batch_name, class_name, subject)
-
-    # ✅ Sync again after attendance, in case of any S3 updates/removals
-    print("🔄 Syncing students.xlsx with S3 after marking attendance...")
-    sync_students_to_excel()
 
     return attendance_list, excel_file_path

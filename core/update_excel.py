@@ -1,102 +1,68 @@
-import os
 import boto3
-from openpyxl import Workbook
-from dotenv import load_dotenv
-from botocore.exceptions import ClientError
+import pandas as pd
+from datetime import datetime
+import os
 
-# Load environment variables
-load_dotenv()
-
-# Local Excel file
-EXCEL_FILE = "students.xlsx"
-
-# AWS config from .env
-AWS_REGION = os.getenv("AWS_REGION")
+AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-BUCKET_NAME = os.getenv("S3_BUCKET", "ict-attendance")
-EXCEL_KEY = "students.xlsx"   # key inside bucket
+BUCKET_NAME = "ict-attendance"
+EXCEL_FILE = "students.xlsx"
 
-# Init S3 client
-s3 = boto3.client(
+s3_client = boto3.client(
     "s3",
     region_name=AWS_REGION,
     aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY
+    aws_secret_access_key=AWS_SECRET_KEY,
 )
 
 
-def download_excel_from_s3():
-    """Download Excel file from S3 if exists"""
-    try:
-        s3.download_file(BUCKET_NAME, EXCEL_KEY, EXCEL_FILE)
-        print(f"⬇️ Downloaded {EXCEL_KEY} from S3")
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            print("⚠️ No Excel file found in S3, will create new one.")
-        else:
-            raise
-
-
-def upload_excel_to_s3():
-    """Upload local Excel file back to S3"""
-    try:
-        s3.upload_file(EXCEL_FILE, BUCKET_NAME, EXCEL_KEY)
-        print(f"⬆️ Uploaded {EXCEL_FILE} to S3")
-    except Exception as e:
-        print(f"❌ Error uploading Excel: {e}")
-
-
-def get_students_from_s3():
-    """
-    Fetch student details (ER number, Name, Batch) from S3 bucket.
-    Assumes folder structure: batch/ER1234_Name.jpg
-    """
-    students = []
-
-    paginator = s3.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=BUCKET_NAME):
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-
-            # Skip folders
-            if key.endswith("/"):
-                continue
-
-            parts = key.split("/")
-            if len(parts) >= 2:
-                batch = parts[0]  # e.g., 2021-2024
-                filename = parts[-1]  # e.g., ER1234_JohnDoe.jpg
-
-                if "_" in filename:
-                    er_number, name_with_ext = filename.split("_", 1)
-                    student_name = os.path.splitext(name_with_ext)[0]
-                    students.append((er_number, student_name, batch))
-
-    return students
-
-
 def sync_students_to_excel():
-    """
-    Sync students from S3 with Excel (local + S3 copy).
-    Completely rebuilds Excel each time from S3 data.
-    """
-    # Download latest Excel (not really needed since we rebuild fresh, but keep for backup)
-    download_excel_from_s3()
+    # 🔹 Get student objects from S3
+    response = s3_client.list_objects_v2(Bucket=BUCKET_NAME)
 
-    students = get_students_from_s3()
+    if "Contents" not in response:
+        print("⚠️ No students found in S3.")
+        return
 
-    # Create a new workbook each time (fresh rebuild)
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Students"
-    ws.append(["ER Number", "Name", "Batch"])  # header
+    data = []
+    for obj in response["Contents"]:
+        key = obj["Key"]
 
-    for er, name, batch in students:
-        ws.append([er, name, batch])
+        # Ignore the Excel file itself
+        if key.endswith(".xlsx"):
+            continue
 
-    wb.save(EXCEL_FILE)
-    print(f"📘 Excel file '{EXCEL_FILE}' rebuilt with {len(students)} students.")
+        try:
+            filename = os.path.basename(key)
+            er_number, student_name = filename.split("_", 1)
+            student_name = os.path.splitext(student_name)[0]
 
-    # Upload updated Excel back to S3
-    upload_excel_to_s3()
+            # 🔹 Get last modified from S3
+            last_modified = obj["LastModified"]
+            upload_date = last_modified.strftime("%Y-%m-%d")
+            upload_time = last_modified.strftime("%H:%M:%S")
+
+            data.append({
+                "ER Number": er_number,
+                "Student Name": student_name,
+                "Upload Date": upload_date,
+                "Upload Time": upload_time,
+            })
+
+        except Exception as e:
+            print(f"❌ Error parsing key {key}: {e}")
+
+    # Convert to DataFrame
+    df = pd.DataFrame(data)
+
+    # Save Excel
+    df.to_excel(EXCEL_FILE, index=False)
+
+    # Upload back to S3
+    s3_client.upload_file(EXCEL_FILE, BUCKET_NAME, EXCEL_FILE)
+    print(f"✅ Excel synced successfully with {len(df)} students.")
+
+
+if __name__ == "__main__":
+    sync_students_to_excel()
