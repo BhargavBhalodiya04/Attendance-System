@@ -4,6 +4,9 @@ import io
 import csv
 from datetime import datetime
 import boto3
+from flask import jsonify
+# from core.list_s3_reports import list_s3_reports
+from datetime import timezone
 from dotenv import load_dotenv
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -20,6 +23,8 @@ load_dotenv()
 AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
+FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendance")
 FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 
 app = Flask(__name__)
@@ -144,7 +149,7 @@ def take_attendance():
             return jsonify({"success": False, "error": "Batch, Subject, and class_images are required"}), 400
 
         # Run batch attendance
-        attendance_list, excel_file_path = mark_batch_attendance_s3(
+        attendance_list, excel_file_path, file_url = mark_batch_attendance_s3(
             batch_name=batch_name,
             class_name=lab_name,
             subject=subject_name,
@@ -158,13 +163,11 @@ def take_attendance():
         # TODO: get full list of students for absent calc (for now empty)
         absent_students = []
 
-        report_url = f"/{excel_file_path}"
-
         return jsonify({
             "success": True,
             "present": present_names,
             "absent": absent_students,
-            "report_url": report_url
+            "report_url": file_url   # ✅ direct S3 public link
         }), 200
 
     except Exception as e:
@@ -254,12 +257,73 @@ def download_attendance():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/upload_excel', methods=['POST'])
+def upload_excel():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"}), 400
 
-if __name__ == '__main__':
-    print("✅ Starting Flask server on http://localhost:5000 ...")
-    app.run(debug=True)
+    file = request.files['file']
+    batch_name = request.form.get('batch_name', 'default_batch')
+    filename = secure_filename(file.filename)
+
+    s3 = boto3.client('s3')
+    s3.upload_fileobj(file, BUCKET_NAME, f"{batch_name}/{filename}")
+
+    return jsonify({"success": True, "message": "File uploaded to S3"})
+
+
+@app.route("/api/reports", methods=["GET"])
+def list_reports():
+    try:
+        response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix="reports/")
+
+        reports = []
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+
+            # only Excel reports
+            if not key.endswith(".xlsx"):
+                continue
+
+            # Download Excel file from S3
+            s3_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=key)
+            body = s3_obj["Body"].read()
+
+            # Parse Excel
+            import pandas as pd, io
+            df = pd.read_excel(io.BytesIO(body))
+
+            records_count = len(df)
+            students = []
+            if "Name" in df.columns:  # optional: extract student names
+                students = df["Name"].dropna().tolist()
+
+            reports.append({
+                "id": key,
+                "fileName": os.path.basename(key),
+                "batch": "-",   # TODO: parse from filename if needed
+                "subject": "-",
+                "date": obj["LastModified"].astimezone(timezone.utc).isoformat(),
+                "size": f"{obj['Size']/1024:.1f} KB",
+                "records": records_count,
+                "status": "ready",
+                "students": students,
+                "url": f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}"
+            })
+
+        return jsonify(reports)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+# if __name__ == '__main__':
+#     print("✅ Starting Flask server on http://localhost:5000 ...")
+#     app.run(debug=True)
 
     
-# if __name__ == '__main__':
-#     print("✅ Starting Flask server on http://0.0.0.0:5000 ...")
-#     app.run(host="0.0.0.0", port=5000, debug=True)
+if __name__ == '__main__':
+    print("✅ Starting Flask server on http://0.0.0.0:5000 ...")
+    app.run(host="0.0.0.0", port=5000, debug=True)

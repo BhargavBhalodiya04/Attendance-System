@@ -23,27 +23,35 @@ def list_student_images_from_s3(bucket, batch_prefix):
                 image_keys.append(key)
     return image_keys
 
-# Extract ER number and student name from file name
+# Extract ER number and student name from file name safely
 def extract_student_details_from_key(key):
-    filename = os.path.basename(key)
-    parts = os.path.splitext(filename)[0].split('_')
+    filename = os.path.basename(key)  # e.g. "1234_John_Doe.png"
+    name_part, _ = os.path.splitext(filename)  # -> "1234_John_Doe"
+    parts = name_part.split('_')
+
     if len(parts) >= 2:
         er_number = parts[0]
-        name = ' '.join(parts[1:])
-        return er_number, name
-    return parts[0], parts[0]  # fallback
+        name = " ".join(parts[1:])
+        return er_number.strip(), name.strip()
 
-# Save attendance to Excel
-def save_attendance_to_excel(attendance_data, batch_name, class_name, subject):
+    # Fallback if no underscore or malformed filename
+    return name_part.strip(), name_part.strip()
+
+# Save attendance to Excel and upload to S3
+def save_attendance_to_excel(attendance_data, batch_name, class_name, subject, s3_bucket, region):
     now = datetime.now()
-    current_date = now.strftime("%Y-%m-%d")
-    current_time = now.strftime("%H-%M-%S")
-    
-    # Save into a fixed folder so Flask can serve it
+    current_date = now.strftime("%Y%m%d")  # YYYYMMDD format for sorting
+
+    # Build filename: date_batch_class_subject.xlsx
+    safe_batch = batch_name.replace(" ", "_")
+    safe_class = class_name.replace(" ", "_")
+    safe_subject = subject.replace(" ", "_")
+
+    filename = f"{current_date}_{safe_batch}_{safe_class}_{safe_subject}.xlsx"
+
+    # Save locally first (temporary)
     save_dir = "attendance_reports"
     os.makedirs(save_dir, exist_ok=True)
-
-    filename = f"Attendance_{batch_name}_{current_date}_{current_time}.xlsx"
     filepath = os.path.join(save_dir, filename)
 
     wb = Workbook()
@@ -58,15 +66,23 @@ def save_attendance_to_excel(attendance_data, batch_name, class_name, subject):
         ws.append([
             student["er_number"],
             student["name"],
-            current_date,
-            current_time,
+            now.strftime("%d-%m-%Y"),
+            now.strftime("%H:%M:%S"),
             class_name,
             subject,
             batch_name
         ])
 
     wb.save(filepath)
-    return filepath
+
+    # ✅ Upload to S3
+    s3 = boto3.client("s3", region_name=region)
+    s3_key = f"reports/{filename}"
+    s3.upload_file(filepath, s3_bucket, s3_key)
+
+    # ✅ Return public file URL
+    file_url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{s3_key}"
+    return filepath, file_url
 
 # Main attendance marking function
 def mark_batch_attendance_s3(
@@ -87,7 +103,6 @@ def mark_batch_attendance_s3(
     for group_img_file in group_image_files:
         group_bytes = group_img_file.read()
 
-        # Ensure group photo has faces
         detection = rekognition.detect_faces(
             Image={'Bytes': group_bytes},
             Attributes=['DEFAULT']
@@ -95,7 +110,6 @@ def mark_batch_attendance_s3(
         if not detection['FaceDetails']:
             raise ValueError("❌ No face detected in group image. Please upload a valid group photo.")
 
-        # Compare each student image
         for key in student_image_keys:
             try:
                 student_bytes = get_photo_bytes_from_s3(s3_bucket, key)
@@ -118,8 +132,10 @@ def mark_batch_attendance_s3(
 
         group_img_file.seek(0)
 
-    # Prepare Excel file
+    # Prepare Excel file and upload to S3
     attendance_list = list(present_students.values())
-    excel_file_path = save_attendance_to_excel(attendance_list, batch_name, class_name, subject)
+    excel_file_path, file_url = save_attendance_to_excel(
+        attendance_list, batch_name, class_name, subject, s3_bucket, region
+    )
 
-    return attendance_list, excel_file_path
+    return attendance_list, excel_file_path, file_url
