@@ -72,7 +72,8 @@ def update_student_excel_and_upload(batch_name, er_number, name):
     wb.save(EXCEL_FILE)
 
     try:
-        upload_file_to_s3(BUCKET_NAME, EXCEL_FILE, 'students.xlsx')
+        excel_key = f"students/{batch_name}/{subject_code}.xlsx"
+        upload_file_to_s3(BUCKET_NAME, EXCEL_FILE, excel_key)
     except Exception as e:
         raise Exception(f"Failed to upload Excel to S3: {e}")
 
