@@ -149,27 +149,18 @@ def take_attendance():
             return jsonify({"success": False, "error": "Batch, Subject, and class_images are required"}), 400
 
         # Run batch attendance
-        attendance_list, excel_file_path, file_url = mark_batch_attendance_s3(
-            batch_name=batch_name,
-            class_name=lab_name,
-            subject=subject_name,
-            group_image_files=group_images
-        )
-
-        # Prepare response
-        present_names = [s["name"] for s in attendance_list]
-        present_er = [s["er_number"] for s in attendance_list]
-
-        # TODO: get full list of students for absent calc (for now empty)
-        absent_students = []
-
+        attendance_list, absent_students, file_url = mark_batch_attendance_s3(
+    batch_name=batch_name,
+    class_name=lab_name,
+    subject=subject_name,
+    group_image_files=group_images
+)
         return jsonify({
             "success": True,
-            "present": present_names,
-            "absent": absent_students,
-            "report_url": file_url   # ✅ direct S3 public link
+            "present": attendance_list,      # full objects with er_number + name
+            "absent": absent_students,       # full objects with er_number + name
+            "report_url": file_url
         }), 200
-
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -317,6 +308,22 @@ def list_reports():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/students/count", methods=["GET"])
+def students_count():
+    try:
+        # Example: read students Excel file from S3
+        s3_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key="students.xlsx")
+        body = s3_obj["Body"].read()
+
+        import pandas as pd, io
+        df = pd.read_excel(io.BytesIO(body))
+
+        # Count rows (students)
+        count = len(df)
+
+        return jsonify({"count": count})
+    except Exception as e:
+        return jsonify({"error": str(e), "count": 0}), 500
 
 
 # if __name__ == '__main__':

@@ -84,7 +84,6 @@ def save_attendance_to_excel(attendance_data, batch_name, class_name, subject, s
     file_url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{s3_key}"
     return filepath, file_url
 
-# Main attendance marking function
 def mark_batch_attendance_s3(
     batch_name,
     class_name,
@@ -96,6 +95,7 @@ def mark_batch_attendance_s3(
     rekognition = boto3.client('rekognition', region_name=region)
     batch_prefix = f"{batch_name}/"
 
+    # ✅ Fetch only images from the selected batch
     student_image_keys = list_student_images_from_s3(s3_bucket, batch_prefix)
 
     present_students = {}
@@ -108,7 +108,7 @@ def mark_batch_attendance_s3(
             Attributes=['DEFAULT']
         )
         if not detection['FaceDetails']:
-            raise ValueError("❌ No face detected in group image. Please upload a valid group photo.")
+            raise ValueError("❌ No face detected in group image.")
 
         for key in student_image_keys:
             try:
@@ -120,22 +120,40 @@ def mark_batch_attendance_s3(
                 )
                 if response['FaceMatches']:
                     er_number, student_name = extract_student_details_from_key(key)
-                    image_url = f"https://{s3_bucket}.s3.amazonaws.com/{key}"
-                    present_students[er_number] = {
-                        "er_number": er_number,
-                        "name": student_name,
-                        "image_url": image_url
-                    }
+                    er_number = er_number.strip()  # ensure no extra spaces
+                    student_name = student_name.strip()
+                    present_students[er_number] = {"er_number": er_number, "name": student_name}
             except Exception as e:
                 print(f"⚠️ Error comparing {key}: {e}")
                 continue
 
         group_img_file.seek(0)
 
-    # Prepare Excel file and upload to S3
+    # ✅ Build full batch student list
+    batch_students = []
+    for key in student_image_keys:
+        er_number, student_name = extract_student_details_from_key(key)
+        batch_students.append({
+            "er_number": er_number.strip(),
+            "name": student_name.strip()
+        })
+
+    # ✅ Compute absent students
+    absent_students = [
+        student for student in batch_students
+        if student["er_number"] not in present_students
+    ]
+
+    # ✅ Debug prints (optional, remove in production)
+    print("Batch students ER numbers:", [s["er_number"] for s in batch_students])
+    print("Present students ER numbers:", list(present_students.keys()))
+    print("Absent students ER numbers:", [s["er_number"] for s in absent_students])
+
+    # Save Excel for present students
     attendance_list = list(present_students.values())
     excel_file_path, file_url = save_attendance_to_excel(
         attendance_list, batch_name, class_name, subject, s3_bucket, region
     )
 
-    return attendance_list, excel_file_path, file_url
+    # ✅ Return present, absent, and excel URL
+    return attendance_list, absent_students, file_url
