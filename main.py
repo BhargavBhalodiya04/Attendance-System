@@ -273,7 +273,7 @@ def list_reports():
             key = obj["Key"]
 
             # only Excel reports
-            if not key.endswith(".xlsx"):
+            if not (key.endswith(".xlsx") or key.endswith(".csv")):
                 continue
 
             # Download Excel file from S3

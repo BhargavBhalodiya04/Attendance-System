@@ -73,7 +73,6 @@ def list_s3_reports():
     """
     try:
         grouped_reports = {}  # {batch: {section: [reports]}}
-
         continuation_token = None
 
         while True:
@@ -88,8 +87,13 @@ def list_s3_reports():
 
             for obj in response.get("Contents", []):
                 key = obj["Key"]
+                filename = os.path.basename(key)
 
-                # Only process CSV/XLSX files
+                # 🚫 Skip master student file
+                if filename.lower() == "students.xlsx":
+                    continue
+
+                # Only process CSV/XLSX reports
                 if not key.lower().endswith((".csv", ".xlsx")):
                     continue
 
@@ -102,8 +106,8 @@ def list_s3_reports():
                 if key.endswith(".csv"):
                     rows = list(csv.reader(io.StringIO(body.decode("utf-8"))))
                     if len(rows) > 1:
-                        records_count = len(rows) - 1  # exclude header
-                        students = [row[0] for row in rows[1:] if row]  # first column
+                        records_count = len(rows) - 1
+                        students = [row[0] for row in rows[1:] if row]
 
                 elif key.endswith(".xlsx"):
                     df = pd.read_excel(io.BytesIO(body))
@@ -112,14 +116,12 @@ def list_s3_reports():
                         students = df["Name"].dropna().tolist()
 
                 # Extract metadata
-                filename = os.path.basename(key)
                 batch, section, subject, formatted_date, user_friendly = parse_metadata_from_filename(filename)
 
-                # Report entry
                 report = {
                     "id": key,
-                    "fileName": filename,              
-                    "userFriendlyName": user_friendly, 
+                    "fileName": filename,
+                    "userFriendlyName": user_friendly,
                     "batch": batch,
                     "section": section,
                     "subject": subject,
@@ -133,13 +135,8 @@ def list_s3_reports():
                 }
 
                 # Insert into grouped structure
-                if batch not in grouped_reports:
-                    grouped_reports[batch] = {}
-                if section not in grouped_reports[batch]:
-                    grouped_reports[batch][section] = []
-                grouped_reports[batch][section].append(report)
+                grouped_reports.setdefault(batch, {}).setdefault(section, []).append(report)
 
-            # Handle pagination
             if response.get("IsTruncated"):
                 continuation_token = response.get("NextContinuationToken")
             else:
