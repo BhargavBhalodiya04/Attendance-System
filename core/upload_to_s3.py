@@ -6,6 +6,7 @@ from datetime import datetime
 import re
 import sys
 from aws_config import AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_REGION
+from openpyxl.utils import get_column_letter
 
 # Constants
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
@@ -52,30 +53,54 @@ def sanitize_for_s3_key(text: str) -> str:
     return text
 
 
-def update_student_excel_and_upload(batch_name, er_number, name):
-    """Update Excel, one sheet per batch, and upload to S3 root."""
+
+
+from openpyxl.utils import get_column_letter
+
+def update_student_excel(batch_name, er_number, name):
+    """Properly update Excel: create batch sheets and central Batch Info sheet."""
     if os.path.exists(EXCEL_FILE):
         wb = load_workbook(EXCEL_FILE)
     else:
         wb = Workbook()
-        default_sheet = wb.active
-        wb.remove(default_sheet)
 
+    # Remove default sheet if it exists and is empty or malformed
+    if 'Sheet1' in wb.sheetnames:
+        sheet1 = wb['Sheet1']
+        if sheet1.max_row <= 1 and sheet1.max_column <= 1:
+            wb.remove(sheet1)
+        elif sheet1.max_row >= 1 and sheet1.max_column >= 1 and sheet1['A1'].value != "ER Number":
+            wb.remove(sheet1)
+
+    # Ensure batch-specific sheet exists
     if batch_name in wb.sheetnames:
-        sheet = wb[batch_name]
+        batch_sheet = wb[batch_name]
     else:
-        sheet = wb.create_sheet(batch_name)
-        sheet.append(["ER Number", "Student Name", "Upload Date & Time"])
+        batch_sheet = wb.create_sheet(batch_name)
+        batch_sheet.append(["ER Number", "Student Name", "Batch Name", "Upload Date & Time"])
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    sheet.append([er_number, name, now])
+    batch_sheet.append([er_number, name, batch_name, now])
+
+    # Ensure central summary sheet exists
+    summary_sheet_name = "Batch Info"
+    if summary_sheet_name not in wb.sheetnames:
+        summary_sheet = wb.create_sheet(summary_sheet_name)
+        summary_sheet.append(["Batch Name", "ER Number", "Student Name", "Last Updated"])
+    else:
+        summary_sheet = wb[summary_sheet_name]
+
+    # Avoid duplicate entries in summary
+    existing_entries = [
+        (row[0].value, row[1].value)
+        for row in summary_sheet.iter_rows(min_row=2)
+    ]
+    if (batch_name, er_number) not in existing_entries:
+        summary_sheet.append([batch_name, er_number, name, now])
+
+    # Save workbook
     wb.save(EXCEL_FILE)
 
-    try:
-        excel_key = f"students/{batch_name}/{subject_code}.xlsx"
-        upload_file_to_s3(BUCKET_NAME, EXCEL_FILE, excel_key)
-    except Exception as e:
-        raise Exception(f"Failed to upload Excel to S3: {e}")
 
 
 def upload_multiple_images(batch_name, er_number, name, image_files):
@@ -117,7 +142,9 @@ def upload_multiple_images(batch_name, er_number, name, image_files):
     sys.dont_write_bytecode = True
 
     try:
-        update_student_excel_and_upload(batch_name, er_number, name)
+        # Update Excel and upload to S3
+        update_student_excel(batch_name, er_number, name)
+        upload_file_to_s3(BUCKET_NAME, EXCEL_FILE, EXCEL_FILE)
         upload_results.append("✅ Excel updated and uploaded to S3 root.")
     except Exception as e:
         upload_results.append(f"❌ Excel update failed: {e}")
