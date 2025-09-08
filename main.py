@@ -326,6 +326,24 @@ def students_count():
         return jsonify({"error": str(e), "count": 0}), 500
 
 
+# from core.generate_attendance_charts import generate_charts
+from flask import Flask, render_template
+from core.generate_attendance_charts import generate_overall_attendance
+
+# app = Flask(__name__)
+
+@app.route('/dashboard', methods=['GET'])
+def dashboard():
+    try:
+        charts = generate_overall_attendance()  # No arguments!
+        return jsonify(charts)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
 # if __name__ == '__main__':
 #     print("✅ Starting Flask server on http://localhost:5000 ...")
 #     app.run(debug=True)
