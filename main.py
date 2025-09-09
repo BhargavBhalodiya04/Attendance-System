@@ -15,6 +15,7 @@ from flask import (
 from flask_cors import CORS
 from flask import send_from_directory
 
+
 sys.dont_write_bytecode = True
 
 # Load .env variables
@@ -339,6 +340,12 @@ def dashboard():
         return jsonify(charts)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+from core.overview import dashboard_bp
+# Register Blueprints
+app.register_blueprint(dashboard_bp)
+
 
 # if __name__ == '__main__':
 #     app.run(debug=True)
