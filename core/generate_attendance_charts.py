@@ -1,5 +1,6 @@
+
 # import matplotlib
-# matplotlib.use('Agg')  # Non-interactive backend
+# matplotlib.use('Agg') 
 
 # import matplotlib.pyplot as plt
 # import io
@@ -9,16 +10,15 @@
 # import os
 # from dotenv import load_dotenv
 
-# # Load environment variables
 # load_dotenv()
 
 # AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 # AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 # AWS_REGION = os.getenv("AWS_REGION")
 # BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
-# EXCEL_FOLDER_KEY = os.getenv("EXCEL_FOLDER_KEY", "reports/")  # Default to 'reports/'
+# EXCEL_FOLDER_KEY = os.getenv("EXCEL_FOLDER_KEY", "reports/")
 
-# def generate_overall_attendance_base64():
+# def generate_overall_attendance():
 #     s3 = boto3.client(
 #         's3',
 #         region_name=AWS_REGION,
@@ -74,29 +74,22 @@
 #             "attendance_percentage": round(float(row['attendance_percentage']), 1)
 #         })
 
-#     # Overall Daily Attendance Trend
-#     daily_trend = (
+#     # ------------------------------
+#     # Build Structured Daily Trend Data
+#     daily_trend_df = (
 #         combined_df.groupby('date')
 #         .agg({'er number': pd.Series.nunique})
 #         .reset_index()
 #     )
+#     daily_trend_data = []
+#     for _, row in daily_trend_df.iterrows():
+#         daily_trend_data.append({
+#             "date": row['date'].strftime('%Y-%m-%d'),
+#             "attendance": int(row['er number'])
+#         })
 
-#     fig, ax = plt.subplots(figsize=(10, 6))
-#     ax.plot(daily_trend['date'], daily_trend['er number'], marker='o', color='green')
-#     ax.set_xlabel('Date')
-#     ax.set_ylabel('Students Present')
-#     ax.set_title('Overall Daily Attendance Trend')
-#     plt.xticks(rotation=45)
-#     plt.grid(True)
-#     plt.tight_layout()
-
-#     buf = io.BytesIO()
-#     fig.savefig(buf, format='png')
-#     plt.close(fig)
-#     buf.seek(0)
-#     daily_trend_chart = base64.b64encode(buf.getvalue()).decode()
-
-#     # Subject-wise Overall Attendance Distribution
+#     # ------------------------------
+#     # Generate Subject Pie Chart (base64 image)
 #     subject_summary = (
 #         combined_df.groupby('subject')
 #         .agg({'er number': pd.Series.nunique})
@@ -104,7 +97,12 @@
 #     )
 
 #     fig, ax = plt.subplots(figsize=(8, 8))
-#     ax.pie(subject_summary['er number'], labels=subject_summary['subject'], autopct='%1.1f%%', startangle=140)
+#     ax.pie(
+#         subject_summary['er number'],
+#         labels=subject_summary['subject'],
+#         autopct='%1.1f%%',
+#         startangle=140
+#     )
 #     ax.set_title('Subject-wise Attendance Distribution')
 #     plt.tight_layout()
 
@@ -116,13 +114,11 @@
 
 #     return {
 #         "students": students,
-#         "daily_trend_chart": daily_trend_chart,
-#         "subject_pie_chart": subject_pie_chart
+#         "daily_trend_data": daily_trend_data,    
+#         "subject_pie_chart": subject_pie_chart    
 #     }
-
-
 import matplotlib
-matplotlib.use('Agg')  # Still needed for pie chart generation
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import io
@@ -132,7 +128,6 @@ import boto3
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
@@ -186,7 +181,6 @@ def generate_overall_attendance():
         student_attendance_count['present_count'] / total_classes * 100
     )
 
-    # Build student summary array
     students = []
     for _, row in student_attendance_count.iterrows():
         students.append({
@@ -210,6 +204,18 @@ def generate_overall_attendance():
             "date": row['date'].strftime('%Y-%m-%d'),
             "attendance": int(row['er number'])
         })
+
+    # Calculate Real-time Average Attendance %
+    total_students = combined_df['er number'].nunique()
+    total_days = combined_df['date'].nunique()
+    total_attendance_records = daily_trend_df['er number'].sum()
+
+    if total_students * total_days > 0:
+        avg_attendance_pct = round(
+            (total_attendance_records / (total_students * total_days)) * 100, 1
+        )
+    else:
+        avg_attendance_pct = 0.0
 
     # ------------------------------
     # Generate Subject Pie Chart (base64 image)
@@ -237,6 +243,7 @@ def generate_overall_attendance():
 
     return {
         "students": students,
-        "daily_trend_data": daily_trend_data,      # Structured data array
-        "subject_pie_chart": subject_pie_chart    # Base64 image remains
+        "daily_trend_data": daily_trend_data,
+        "subject_pie_chart": subject_pie_chart,
+        "avg_attendance_pct": f"{avg_attendance_pct}%"  # Example: "87.5%"
     }
