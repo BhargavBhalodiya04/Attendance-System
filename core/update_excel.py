@@ -37,9 +37,9 @@ def sync_students_to_excel():
             continue
 
         try:
-            filename = os.path.basename(key)  # e.g., "923101330_Bhargav_1.jpg"
-            batch_name = os.path.dirname(key)  # e.g., "1234-1234"
-
+            filename = os.path.basename(key) 
+            batch_name = os.path.dirname(key)
+            
             er_number, student_name = filename.split("_", 1)
             student_name = os.path.splitext(student_name)[0]
 

@@ -102,9 +102,8 @@ def update_student_excel(batch_name, er_number, name):
     wb.save(EXCEL_FILE)
 
 
-
 def upload_multiple_images(batch_name, er_number, name, image_files):
-    """Upload multiple images under batch folder prefix in S3 bucket."""
+    """Upload multiple images under batch folder prefix in S3 bucket and auto-index in Rekognition."""
     er_number = er_number.strip()
     sanitized_batch_name = sanitize_for_s3_key(batch_name)
     sanitized_name = sanitize_for_s3_key(name)
@@ -133,6 +132,10 @@ def upload_multiple_images(batch_name, er_number, name, image_files):
             image_file.save(local_path)
             s3.upload_file(Filename=local_path, Bucket=BUCKET_NAME, Key=s3_key)
             upload_results.append(f"✅ Uploaded: {s3_key}")
+
+            # 👇 Trigger Rekognition auto-index here
+            index_face_to_rekognition(er_number, sanitized_name, s3_key)
+
         except Exception as e:
             upload_results.append(f"❌ Failed: {s3_key} -> {str(e)}")
         finally:
@@ -162,6 +165,25 @@ def mark_attendance_s3():
         "❌ S3: Student2.jpg face not found"
     ]
     return results
+
+def index_face_to_rekognition(er_number, student_name, s3_key, collection_id="students", region="ap-south-1"):
+    rekognition = boto3.client('rekognition', region_name=region)
+    external_id = f"{er_number}_{student_name.replace(' ', '_')}"
+    try:
+        response = rekognition.index_faces(
+            CollectionId=collection_id,
+            Image={"S3Object": {"Bucket": BUCKET_NAME, "Name": s3_key}},
+            ExternalImageId=external_id,
+            DetectionAttributes=["DEFAULT"]
+        )
+        if response["FaceRecords"]:
+            print(f"✅ Rekognition Indexed: {external_id}")
+        else:
+            print(f"⚠️ No face detected in {s3_key}")
+    except rekognition.exceptions.ResourceNotFoundException:
+        rekognition.create_collection(CollectionId=collection_id)
+        print(f"✅ Rekognition Collection '{collection_id}' created")
+        index_face_to_rekognition(er_number, student_name, s3_key, collection_id, region)
 
 
 if __name__ == '__main__':
