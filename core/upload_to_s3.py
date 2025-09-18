@@ -170,6 +170,7 @@ def index_face_to_rekognition(er_number, student_name, s3_key, collection_id="st
     rekognition = boto3.client('rekognition', region_name=region)
     external_id = f"{er_number}_{student_name.replace(' ', '_')}"
     try:
+        
         response = rekognition.index_faces(
             CollectionId=collection_id,
             Image={"S3Object": {"Bucket": BUCKET_NAME, "Name": s3_key}},
