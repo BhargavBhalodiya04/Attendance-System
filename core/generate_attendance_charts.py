@@ -71,7 +71,6 @@ def generate_overall_attendance():
             "attendance_percentage": round(float(row['attendance_percentage']), 1)
         })
 
-    # ------------------------------
     # Build Structured Daily Trend Data
     daily_trend_df = (
         combined_df.groupby('date')
@@ -97,7 +96,6 @@ def generate_overall_attendance():
     else:
         avg_attendance_pct = 0.0
 
-    # ------------------------------
     # Generate Subject Pie Chart (base64 image)
     subject_summary = (
         combined_df.groupby('subject')
@@ -125,5 +123,5 @@ def generate_overall_attendance():
         "students": students,
         "daily_trend_data": daily_trend_data,
         "subject_pie_chart": subject_pie_chart,
-        "avg_attendance_pct": f"{avg_attendance_pct}%"  # Example: "87.5%"
+        "avg_attendance_pct": f"{avg_attendance_pct}%"
     }

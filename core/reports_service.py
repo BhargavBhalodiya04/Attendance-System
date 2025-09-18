@@ -54,7 +54,7 @@ def parse_metadata_from_filename(filename: str):
             # Map subject
             subject = SUBJECT_MAP.get(subject_code, subject_code)
 
-            # Build user-friendly name
+            # Build name
             user_friendly = f"{subject} | Batch {batch} | Section {section} | {formatted_date}"
 
             return batch, section, subject, formatted_date, user_friendly
@@ -62,15 +62,10 @@ def parse_metadata_from_filename(filename: str):
     except Exception:
         pass
 
-    return "-", "-", "-", "-", filename  # fallback
+    return "-", "-", "-", "-", filename 
 
 
 def list_s3_reports():
-    """
-    List all attendance reports in the S3 bucket (reports/ prefix).
-    Group by batch -> section.
-    Extracts metadata, record counts, and student list.
-    """
     try:
         grouped_reports = {}  # {batch: {section: [reports]}}
         continuation_token = None
