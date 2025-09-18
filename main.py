@@ -2,11 +2,10 @@ import os
 import sys
 import io
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import boto3
 from flask import jsonify
 # from core.list_s3_reports import list_s3_reports
-from datetime import timezone
 from dotenv import load_dotenv
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -14,7 +13,6 @@ from flask import (
 )
 from flask_cors import CORS
 from flask import send_from_directory
-
 
 sys.dont_write_bytecode = True
 
@@ -30,6 +28,14 @@ FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
+
+# -------------------------
+# Session & Cookie Settings (5 minutes)
+# -------------------------
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # set True if using HTTPS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Enable CORS for React frontend
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
@@ -63,17 +69,21 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         if username == USER['username'] and password == USER['password']:
+            session.permanent = True     # uses PERMANENT_SESSION_LIFETIME (5 min)
             session['logged_in'] = True
             return redirect(url_for('home'))
         else:
             return render_template('login.html', error="Invalid credentials")
     return render_template('login.html')
 
+from flask import make_response
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    resp = make_response(redirect(url_for('login')))
+    resp.set_cookie(app.session_cookie_name, '', expires=0)
+    return resp
 
 
 @app.route('/home', methods=['GET', 'POST'])
@@ -151,11 +161,11 @@ def take_attendance():
 
         # Run batch attendance
         attendance_list, absent_students, file_url = mark_batch_attendance_s3(
-    batch_name=batch_name,
-    class_name=lab_name,
-    subject=subject_name,
-    group_image_files=group_images
-)
+            batch_name=batch_name,
+            class_name=lab_name,
+            subject=subject_name,
+            group_image_files=group_images
+        )
         return jsonify({
             "success": True,
             "present": attendance_list,      # full objects with er_number + name

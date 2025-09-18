@@ -16,8 +16,6 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_KEY,
 )
 
-from openpyxl import Workbook, load_workbook
-
 from openpyxl import Workbook
 
 def sync_students_to_excel():

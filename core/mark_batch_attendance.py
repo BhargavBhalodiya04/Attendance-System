@@ -38,7 +38,7 @@ def extract_student_details_from_key(key):
     return name_part.strip(), name_part.strip()
 
 # Save attendance to Excel and upload to S3
-def save_attendance_to_excel(attendance_data, batch_name, class_name, subject, s3_bucket, region):
+def save_attendance_to_excel(attendance_data, absent_data, batch_name, class_name, subject, s3_bucket, region):
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")  # YYYYMMDD format for sorting
 
@@ -59,9 +59,9 @@ def save_attendance_to_excel(attendance_data, batch_name, class_name, subject, s
     ws.title = "Attendance"
 
     # Header row
-    ws.append(["ER Number", "Student Name", "Date", "Time", "Class", "Subject", "Batch"])
+    ws.append(["ER Number", "Student Name", "Date", "Time", "Class", "Subject", "Batch", "Status"])
 
-    # Data rows
+    # ✅ Present students
     for student in attendance_data:
         ws.append([
             student["er_number"],
@@ -70,7 +70,21 @@ def save_attendance_to_excel(attendance_data, batch_name, class_name, subject, s
             now.strftime("%H:%M:%S"),
             class_name,
             subject,
-            batch_name
+            batch_name,
+            "Present"
+        ])
+
+    # ✅ Absent students
+    for student in absent_data:
+        ws.append([
+            student["er_number"],
+            student["name"],
+            now.strftime("%d-%m-%Y"),
+            now.strftime("%H:%M:%S"),
+            class_name,
+            subject,
+            batch_name,
+            "Absent"
         ])
 
     wb.save(filepath)
@@ -152,8 +166,8 @@ def mark_batch_attendance_s3(
     # Save Excel for present students
     attendance_list = list(present_students.values())
     excel_file_path, file_url = save_attendance_to_excel(
-        attendance_list, batch_name, class_name, subject, s3_bucket, region
-    )
+    attendance_list, absent_students, batch_name, class_name, subject, s3_bucket, region
+)
 
     # ✅ Return present, absent, and excel URL
     return attendance_list, absent_students, file_url
