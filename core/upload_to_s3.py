@@ -80,7 +80,7 @@ def update_student_excel(batch_name, er_number, name):
         batch_sheet.append(["ER Number", "Student Name", "Batch Name", "Upload Date & Time"])
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    batch_sheet.append([er_number, name, batch_name, now])
+    batch_sheet.append([er_number, name, now])
 
     # Ensure central summary sheet exists
     summary_sheet_name = "Batch Info"

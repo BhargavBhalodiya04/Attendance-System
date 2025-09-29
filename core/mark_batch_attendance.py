@@ -40,16 +40,17 @@ def extract_student_details_from_key(key):
 # Save attendance to Excel and upload to S3
 def save_attendance_to_excel(attendance_data, absent_data, batch_name, class_name, subject, s3_bucket, region):
     now = datetime.now()
-    current_date = now.strftime("%Y%m%d")  # YYYYMMDD format for sorting
+    current_date = now.strftime("%Y%m%d")  
+    current_time = now.strftime("%H%M%S")  # ✅ Unique per attendance
 
-    # Build filename: date_batch_class_subject.xlsx
+    # Build filename: date_time_batch_class_subject.xlsx
     safe_batch = batch_name.replace(" ", "_")
     safe_class = class_name.replace(" ", "_")
     safe_subject = subject.replace(" ", "_")
 
-    filename = f"{current_date}_{safe_batch}_{safe_class}_{safe_subject}.xlsx"
+    filename = f"{current_date}_{current_time}_{safe_batch}_{safe_class}_{safe_subject}.xlsx"
 
-    # Save locally first (temporary)
+    # Save locally first
     save_dir = "attendance_reports"
     os.makedirs(save_dir, exist_ok=True)
     filepath = os.path.join(save_dir, filename)

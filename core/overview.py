@@ -26,16 +26,16 @@ dashboard_bp = Blueprint("dashboard_api", __name__)
 @dashboard_bp.route("/overview", methods=["GET"])
 def class_overview():
     try:
-        # Load students Excel from S3
+        # Load master students list
         s3_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key="students.xlsx")
         body = s3_obj["Body"].read()
         df_students = pd.read_excel(io.BytesIO(body))
         total_students = len(df_students)
 
-        # Find subject reports in S3
+        # Attendance reports in S3
         response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix="reports/")
         subjects_data = []
-        trend_data = {}
+        overall_trend = []
 
         for obj in response.get("Contents", []):
             key = obj["Key"]
@@ -45,46 +45,69 @@ def class_overview():
             s3_file = s3_client.get_object(Bucket=BUCKET_NAME, Key=key)
             file_body = s3_file["Body"].read()
 
-            # Load attendance file
+            # Load file
             if key.endswith(".csv"):
                 df = pd.read_csv(io.BytesIO(file_body))
             else:
                 df = pd.read_excel(io.BytesIO(file_body))
 
-            # Skip empty files
             if df.empty:
                 continue
 
-            # Safe subject extraction
-            subject_name = df["Subject"].iloc[0] if "Subject" in df.columns and len(df) > 0 else "Unknown"
+            # Normalize headers
+            df.columns = [c.strip() for c in df.columns]
 
-            # Safe batch/division extraction
-            if "Division" in df.columns:
-                batch_name = df["Division"].iloc[0] if len(df) > 0 else "Unknown"
-            elif "Class" in df.columns:
-                batch_name = df["Class"].iloc[0] if len(df) > 0 else "Unknown"
-            else:
-                batch_name = "Unknown"
+            # Subject and batch extraction
+            subject_name = df["Subject"].iloc[0] if "Subject" in df.columns else "Unknown"
+            batch_name = df["Batch"].iloc[0] if "Batch" in df.columns else "Unknown"
 
             # Attendance calculation
-            present_count = df["ER Number"].nunique() if "ER Number" in df.columns else 0
+            present_count = df[df["Status"].str.lower() == "present"]["ER Number"].nunique() \
+                if "Status" in df.columns and "ER Number" in df.columns else 0
+
             total_count = total_students if total_students > 0 else 1
             attendance_percent = round((present_count / total_count) * 100, 2)
 
             subjects_data.append({
                 "subject": subject_name,
                 "batch": batch_name,
-                "attendance": attendance_percent
+                "attendance": attendance_percent,
+                "presentCount": present_count,
+                "totalCount": total_count
             })
 
-            # Trend: group by month if Date column exists
+            # Trend (by month)
             if "Date" in df.columns:
-                df["Month"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%b")
-                month_avg = df.groupby("Month").size().mean() if not df.empty else 0
-                trend_data[f"{subject_name} ({batch_name})"] = {
-                    "month": list(df["Month"].unique()),
-                    "attendance": month_avg
-                }
+                df["Month"] = pd.to_datetime(
+                    df["Date"], format="%d-%m-%Y", errors="coerce"
+                ).dt.strftime("%b")
+
+                trend_counts = (
+                    df[df["Status"].str.lower() == "present"]
+                    .groupby("Month")["ER Number"]
+                    .nunique()
+                    .reset_index(name="present")
+                )
+
+                for _, row in trend_counts.iterrows():
+                    overall_trend.append({
+                        "month": row["Month"],
+                        "attendance": row["present"],
+                        "subject_batch": f"{subject_name} ({batch_name})"
+                    })
+
+        # ✅ Deduplicate & aggregate subjects by subject+batch
+        if subjects_data:
+            df_subjects = pd.DataFrame(subjects_data)
+            subjects_data = (
+                df_subjects.groupby(["subject", "batch"], as_index=False)
+                .agg({
+                    "attendance": "mean",
+                    "presentCount": "sum",
+                    "totalCount": "max"
+                })
+                .to_dict(orient="records")
+            )
 
         # Overall stats
         avg_attendance = round(
@@ -95,16 +118,6 @@ def class_overview():
         best_subject_data = max(subjects_data, key=lambda x: x["attendance"]) if subjects_data else None
         best_subject = best_subject_data["subject"] if best_subject_data else None
         best_batch = best_subject_data["batch"] if best_subject_data else None
-
-        # Format trend for chart
-        overall_trend = []
-        for subject_batch, data in trend_data.items():
-            for m in data["month"]:
-                overall_trend.append({
-                    "month": m,
-                    "attendance": data["attendance"],
-                    "subject_batch": subject_batch
-                })
 
         return jsonify({
             "avgAttendance": avg_attendance,
@@ -118,3 +131,4 @@ def class_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    

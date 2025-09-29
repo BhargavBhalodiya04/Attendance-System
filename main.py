@@ -345,11 +345,20 @@ from core.generate_attendance_charts import generate_overall_attendance
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     try:
-        charts = generate_overall_attendance()  # No arguments!
-        return jsonify(charts)
+        charts = generate_overall_attendance()
+
+        return render_template(
+            "dashboard.html",
+            avg_attendance_pct=charts.get("avg_attendance_pct", "0.0"),
+            students=charts.get("students", []),
+            daily_trend_data=charts.get("daily_trend_data", []),
+            subject_pie_chart=charts.get("subject_pie_chart", None)
+        )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return render_template("dashboard.html", error=str(e))
 
 
 from core.overview import dashboard_bp

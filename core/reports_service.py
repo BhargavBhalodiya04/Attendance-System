@@ -62,7 +62,33 @@ def parse_metadata_from_filename(filename: str):
     except Exception:
         pass
 
-    return "-", "-", "-", "-", filename 
+    return "-", "-", "-", "-", filename
+
+
+def load_master_students():
+    """
+    Reads master student list from students.xlsx in S3.
+    Expected format: columns [Batch, Section, Name]
+    Returns: dict {batch: {section: [students]}}
+    """
+    try:
+        s3_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key="reports/students.xlsx")
+        body = s3_obj["Body"].read()
+        df = pd.read_excel(io.BytesIO(body))
+
+        master_students = {}
+        if {"Batch", "Section", "Name"}.issubset(df.columns):
+            for _, row in df.iterrows():
+                batch = str(row["Batch"]).strip()
+                section = str(row["Section"]).strip()
+                name = str(row["Name"]).strip()
+                if batch and section and name:
+                    master_students.setdefault(batch, {}).setdefault(section, []).append(name)
+
+        return master_students
+    except Exception as e:
+        print("⚠️ Could not load master student list:", e)
+        return {}
 
 
 def list_s3_reports():
@@ -127,6 +153,8 @@ def list_s3_reports():
                     "status": "ready",
                     "students": students,
                     "url": f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{key}",
+                    # will be filled later
+                    "attendanceMap": {}
                 }
 
                 # Insert into grouped structure
@@ -141,3 +169,63 @@ def list_s3_reports():
 
     except Exception as e:
         return {"error": str(e)}
+
+
+def calculate_attendance_percentages(grouped_reports, master_students):
+    results = {}
+
+    for batch, sections in grouped_reports.items():
+        for section, reports in sections.items():
+            students = master_students.get(batch, {}).get(section, [])
+            total_classes = len(reports)
+
+            # Initialize counts
+            student_counts = {s: {"present": 0, "total": total_classes} for s in students}
+
+            # Mark presence/absence in each report
+            for report in reports:
+                present_students = set(report["students"])
+                attendance_map = {}
+                for s in students:
+                    if s in present_students:
+                        student_counts[s]["present"] += 1
+                        attendance_map[s] = "Present"
+                    else:
+                        attendance_map[s] = "Absent"
+                report["attendanceMap"] = attendance_map  # attach per-class status
+
+            # Compute %
+            for s, data in student_counts.items():
+                attended = data["present"]
+                total = data["total"]
+                pct = round((attended / total) * 100, 1) if total > 0 else 0
+                student_counts[s]["percentage"] = pct
+
+            results[(batch, section)] = student_counts
+
+    return results
+
+
+if __name__ == "__main__":
+    # Load reports
+    reports = list_s3_reports()
+
+    # Load master student list
+    master_students = load_master_students()
+
+    # Calculate attendance summary + update reports with per-class map
+    attendance_summary = calculate_attendance_percentages(reports, master_students)
+
+    # Example print
+    for (batch, section), students in attendance_summary.items():
+        print(f"\n📘 Batch {batch} | Section {section}")
+        for name, stats in students.items():
+            print(f"{name}: {stats['present']}/{stats['total']} classes ({stats['percentage']}%)")
+
+    # Example: see per-report attendance mapping
+    for batch, sections in reports.items():
+        for section, rep_list in sections.items():
+            for rep in rep_list:
+                print(f"\n📝 {rep['userFriendlyName']}")
+                for s, status in rep["attendanceMap"].items():
+                    print(f"  {s}: {status}")

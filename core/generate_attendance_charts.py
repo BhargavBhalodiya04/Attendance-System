@@ -37,7 +37,7 @@ def generate_overall_attendance():
         df.columns = [col.strip().lower() for col in df.columns]
         combined_df = pd.concat([combined_df, df], ignore_index=True)
 
-    required_cols = ['date', 'subject', 'student name', 'er number']
+    required_cols = ['date', 'subject', 'student name', 'er number', 'status']
     missing_cols = [col for col in required_cols if col not in combined_df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns in Excel files: {missing_cols}")
@@ -48,17 +48,30 @@ def generate_overall_attendance():
     # Total unique class sessions (date + subject)
     total_classes = combined_df[['date', 'subject']].drop_duplicates().shape[0]
 
-    # Individual student attendance counts
-    student_attendance_count = (
-        combined_df[['date', 'subject', 'student name', 'er number']]
+    # Count Present only
+    present_df = combined_df[combined_df['status'].str.lower() == 'present']
+
+    present_count = (
+        present_df[['date', 'subject', 'student name', 'er number']]
         .drop_duplicates()
         .groupby(['student name', 'er number'])
         .size()
         .reset_index(name='present_count')
     )
 
+    # Ensure all students (including absent ones) are included
+    all_students = combined_df[['student name', 'er number']].drop_duplicates()
+
+    student_attendance_count = all_students.merge(
+        present_count,
+        on=['student name', 'er number'],
+        how='left'
+    ).fillna({'present_count': 0})
+
+    # Add total_classes and percentage
+    student_attendance_count['total_classes'] = total_classes
     student_attendance_count['attendance_percentage'] = (
-        student_attendance_count['present_count'] / total_classes * 100
+        student_attendance_count['present_count'] / student_attendance_count['total_classes'] * 100
     )
 
     students = []
@@ -67,13 +80,13 @@ def generate_overall_attendance():
             "name": row['student name'],
             "er_number": row['er number'],
             "present_count": int(row['present_count']),
-            "total_classes": total_classes,
+            "total_classes": int(row['total_classes']),
             "attendance_percentage": round(float(row['attendance_percentage']), 1)
         })
 
-    # Build Structured Daily Trend Data
+    # Build Structured Daily Trend Data (how many PRESENT each day)
     daily_trend_df = (
-        combined_df.groupby('date')
+        present_df.groupby('date')
         .agg({'er number': pd.Series.nunique})
         .reset_index()
     )
@@ -87,7 +100,7 @@ def generate_overall_attendance():
     # Calculate Real-time Average Attendance %
     total_students = combined_df['er number'].nunique()
     total_days = combined_df['date'].nunique()
-    total_attendance_records = daily_trend_df['er number'].sum()
+    total_attendance_records = present_df[['date', 'er number']].drop_duplicates().shape[0]
 
     if total_students * total_days > 0:
         avg_attendance_pct = round(
@@ -96,9 +109,9 @@ def generate_overall_attendance():
     else:
         avg_attendance_pct = 0.0
 
-    # Generate Subject Pie Chart (base64 image)
+    # Generate Subject Pie Chart (based on PRESENT counts)
     subject_summary = (
-        combined_df.groupby('subject')
+        present_df.groupby('subject')
         .agg({'er number': pd.Series.nunique})
         .reset_index()
     )
