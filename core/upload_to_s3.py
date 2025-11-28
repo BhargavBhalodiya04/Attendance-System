@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import boto3
 from werkzeug.utils import secure_filename
@@ -198,7 +197,6 @@ if __name__ == '__main__':
     results = upload_multiple_images(batch_name, er_number, student_name, image_files)
     for res in results:
         print(res)
-=======
 import os
 import boto3
 from werkzeug.utils import secure_filename
@@ -398,4 +396,3 @@ if __name__ == '__main__':
     results = upload_multiple_images(batch_name, er_number, student_name, image_files)
     for res in results:
         print(res)
->>>>>>> 0735afa (git new try sem 7)

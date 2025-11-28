@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import io
 import os
 import pandas as pd
@@ -132,7 +131,6 @@ def class_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-=======
 import io
 import os
 import pandas as pd
@@ -266,5 +264,4 @@ def class_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
->>>>>>> 0735afa (git new try sem 7)
     
