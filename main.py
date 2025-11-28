@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import sys
 import io
@@ -379,7 +378,6 @@ app.register_blueprint(dashboard_bp)
 if __name__ == '__main__':
     print("✅ Starting Flask server on http://0.0.0.0:5000 ...")
     app.run(host="0.0.0.0", port=5000, debug=True)
-=======
 import os
 import sys
 import io
@@ -760,4 +758,3 @@ app.register_blueprint(dashboard_bp)
 if __name__ == '__main__':
     print("✅ Starting Flask server on http://0.0.0.0:5000 ...")
     app.run(host="0.0.0.0", port=5000, debug=True)
->>>>>>> 0735afa (git new try sem 7)
