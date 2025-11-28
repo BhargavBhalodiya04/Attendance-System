@@ -23,7 +23,7 @@ AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
 FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
-BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendance")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendances")
 FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 
 app = Flask(__name__)
@@ -111,7 +111,7 @@ def action_page(action):
 
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
-    bucket_name = request.form.get('bucket_name', '').strip() or 'ict-attendance'
+    bucket_name = request.form.get('bucket_name', '').strip() or 'ict-attendances'
     batch_name = request.form.get('batch_name', '').strip()
     er_number = request.form.get('er_number', '').strip()
     student_name = request.form.get('student_name', '').strip() or request.form.get('name', '').strip()
@@ -232,13 +232,13 @@ def download_attendance():
         # ✅ Upload CSV to S3 with public-read ACL
         s3_client.upload_fileobj(
             csv_bytes,
-            "ict-attendance",
+            "ict-attendances",
             s3_key,
             ExtraArgs={'ACL': 'public-read'}   # 👈 makes file public
         )
 
         # ✅ Permanent Public URL
-        public_url = f"https://ict-attendance.s3.ap-south-1.amazonaws.com/{s3_key}"
+        public_url = f"https://ict-attendances.s3.ap-south-1.amazonaws.com/{s3_key}"
 
         if request.headers.get("Accept") == "application/json":
             return jsonify({
@@ -403,7 +403,7 @@ AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
 FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
-BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendance")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendances")
 FLASK_SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 
 app = Flask(__name__)
@@ -491,7 +491,7 @@ def action_page(action):
 
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
-    bucket_name = request.form.get('bucket_name', '').strip() or 'ict-attendance'
+    bucket_name = request.form.get('bucket_name', '').strip() or 'ict-attendances'
     batch_name = request.form.get('batch_name', '').strip()
     er_number = request.form.get('er_number', '').strip()
     student_name = request.form.get('student_name', '').strip() or request.form.get('name', '').strip()
@@ -612,13 +612,13 @@ def download_attendance():
         # ✅ Upload CSV to S3 with public-read ACL
         s3_client.upload_fileobj(
             csv_bytes,
-            "ict-attendance",
+            "ict-attendances",
             s3_key,
             ExtraArgs={'ACL': 'public-read'}   # 👈 makes file public
         )
 
         # ✅ Permanent Public URL
-        public_url = f"https://ict-attendance.s3.ap-south-1.amazonaws.com/{s3_key}"
+        public_url = f"https://ict-attendances.s3.ap-south-1.amazonaws.com/{s3_key}"
 
         if request.headers.get("Accept") == "application/json":
             return jsonify({

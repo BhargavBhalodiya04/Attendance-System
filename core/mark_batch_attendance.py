@@ -104,7 +104,7 @@ def mark_batch_attendance_s3(
     class_name,
     subject,
     group_image_files,
-    s3_bucket='ict-attendance',
+    s3_bucket='ict-attendances',
     region='ap-south-1'
 ):
     rekognition = boto3.client('rekognition', region_name=region)
@@ -277,7 +277,7 @@ def mark_batch_attendance_s3(
     class_name,
     subject,
     group_image_files,
-    s3_bucket='ict-attendance',
+    s3_bucket='ict-attendances',
     region='ap-south-1'
 ):
     rekognition = boto3.client('rekognition', region_name=region)

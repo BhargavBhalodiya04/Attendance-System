@@ -13,7 +13,7 @@ from openpyxl.utils import get_column_letter
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 MAX_FILE_SIZE_MB = 5
 EXCEL_FILE = 'students.xlsx'
-BUCKET_NAME = 'ict-attendance'
+BUCKET_NAME = 'ict-attendances'
 
 # Initialize S3 client
 s3 = boto3.client(
@@ -213,7 +213,7 @@ from openpyxl.utils import get_column_letter
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 MAX_FILE_SIZE_MB = 5
 EXCEL_FILE = 'students.xlsx'
-BUCKET_NAME = 'ict-attendance'
+BUCKET_NAME = 'ict-attendances'
 
 # Initialize S3 client
 s3 = boto3.client(

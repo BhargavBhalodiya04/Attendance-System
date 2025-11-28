@@ -6,7 +6,7 @@ import os
 AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-BUCKET_NAME = "ict-attendance"
+BUCKET_NAME = "ict-attendances"
 EXCEL_FILE = 'students.xlsx'
 
 s3_client = boto3.client(

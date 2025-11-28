@@ -13,7 +13,7 @@ load_dotenv()
 AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendance")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendances")
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -245,7 +245,7 @@ load_dotenv()
 AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendance")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "ict-attendances")
 
 # Initialize S3 client
 s3_client = boto3.client(
