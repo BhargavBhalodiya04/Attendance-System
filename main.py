@@ -8,12 +8,16 @@ from datetime import datetime, timedelta, timezone
 import boto3
 import pandas as pd
 from dotenv import load_dotenv
+
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    session, send_file, jsonify, send_from_directory, make_response, Response
+    session, send_file, jsonify, send_from_directory,
+    make_response, Response
 )
+
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+
 
 # prevent .pyc generation
 sys.dont_write_bytecode = True
@@ -357,6 +361,32 @@ try:
     app.register_blueprint(dashboard_bp)
 except Exception as e:
     app.logger.exception("Failed to import/register core.overview blueprint")
+
+@app.route("/api/dashboard", methods=["GET"])
+def dashboard_api():
+    try:
+        charts = generate_overall_attendance()
+        return jsonify(charts), 200
+    except Exception as e:
+        app.logger.exception("dashboard_api failed")
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route("/api/trigger-low-attendance-alert", methods=["POST"])
+def trigger_low_attendance_alert():
+    try:
+        from core.alert_service import check_and_alert_low_attendance
+        alerted = check_and_alert_low_attendance()
+        return jsonify({
+            "success": True, 
+            "message": f"Alerts processed. Sent {len(alerted)} emails.",
+            "alerted_students": alerted
+        }), 200
+    except Exception as e:
+        app.logger.exception("trigger_low_attendance_alert failed")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 # ---------------- Development helpers ----------------
 
